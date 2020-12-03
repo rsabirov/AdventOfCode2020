@@ -72,6 +72,63 @@ namespace AdventOfCode2020
             return correctPasswordsCount;
         }
 
+        [TestCase("Day3_problem.txt", ExpectedResult = 169)]
+        [TestCase("Day3_test.txt", ExpectedResult = 7)]
+        public long Day3_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var map = new Day3Map(inputs);
+
+            return map.Trees((x: 3, y: 1));
+        }
+
+        [TestCase("Day3_problem.txt", ExpectedResult = 7560370818)]
+        [TestCase("Day3_test.txt", ExpectedResult = 336)]
+        public long Day3_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var map = new Day3Map(inputs);
+
+            return map.Trees((x: 1, y: 1))
+                * map.Trees((x: 3, y: 1))
+                * map.Trees((x: 5, y: 1))
+                * map.Trees((x: 7, y: 1))
+                * map.Trees((x: 1, y: 2));
+        }
+
+        private sealed class Day3Map
+        {
+            private readonly string[] _input;
+            private readonly int _width;
+
+            public Day3Map(string[] input)
+            {
+                _input = input;
+                _width = input[0].Length;
+            }
+
+            private bool IsTree((int x, int y) loc)
+            {
+                var x = loc.x % _width;
+                return _input[loc.y][x] == '#';
+            }
+
+            public long Trees((int x, int y) offset)
+            {
+                var loc = (x: 0, y: 0);
+                var trees = 0;
+                do
+                {
+                    if (IsTree(loc))
+                        trees++;
+
+                    loc = (loc.x + offset.x, loc.y + offset.y);
+                } while (loc.y < _input.Length);
+                
+                return trees;
+            }
+        }
+
         private static string[] ReadAllLines(string fileName)
         {
             var filePath = Path.Combine(TestContext.CurrentContext.WorkDirectory, "../../../Input/", fileName);
