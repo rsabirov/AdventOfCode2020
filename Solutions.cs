@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 
 namespace AdventOfCode2020
@@ -96,6 +98,96 @@ namespace AdventOfCode2020
                 * map.Trees((x: 1, y: 2));
         }
 
+        [TestCase("Day4_test.txt", ExpectedResult = 2)]
+        [TestCase("Day4_problem.txt", ExpectedResult = 192)]
+        public long Day4_1(string fileName)
+        {
+            var inputs = ReadEmptyLineSeparated(fileName);
+            var passports = inputs.Select(Day4Passport.Parse).ToArray();
+
+            return passports.Count(p => p.HaveRequiredValues);
+        }
+
+        [TestCase("Day4_valid.txt", ExpectedResult = 4)]
+        [TestCase("Day4_invalid.txt", ExpectedResult = 0)]
+        [TestCase("Day4_test.txt", ExpectedResult = 2)]
+        [TestCase("Day4_problem.txt", ExpectedResult = 101)]
+        public long Day4_2(string fileName)
+        {
+            var inputs = ReadEmptyLineSeparated(fileName);
+            var passports = inputs.Select(Day4Passport.Parse).ToArray();
+
+            return passports.Count(p => p.HaveValidValues);
+        }
+
+        private sealed class Day4Passport
+        {
+            public bool HaveRequiredValues { get; private set; }
+            public bool HaveValidValues { get; private set; }
+
+            public static Day4Passport Parse(string line)
+            {
+                var parts = line.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+                var fields = parts.ToDictionary(i => i.Split(":")[0], i => i.Split(":")[1]);
+
+                var result = new Day4Passport
+                {
+                    HaveRequiredValues = IsHaveRequiredValues(fields),
+                    HaveValidValues = IsHaveValidValues(fields)
+                };
+
+                return result;
+            }
+
+            private static bool IsHaveRequiredValues(IDictionary<string, string> parts)
+            {
+                if (parts.Count == 8)
+                    return true;
+                if (parts.Count == 7 && !parts.ContainsKey("cid"))
+                    return true;
+                return false;
+            }
+
+            private static bool IsHaveValidValues(Dictionary<string, string> fields)
+            {
+                if (!IsHaveRequiredValues(fields))
+                    return false;
+                var byr = fields["byr"];
+                var byrValid = Regex.IsMatch(byr, @"^\d{4}$") && int.TryParse(byr, out var byrValue) &&
+                               byrValue >= 1920 && byrValue <= 2002;
+
+                var iyr = fields["iyr"];
+                var iyrValid = Regex.IsMatch(iyr, @"^\d{4}$") && int.TryParse(iyr, out var iyrValue) &&
+                               iyrValue >= 2010 && iyrValue <= 2020;
+
+                var eyr = fields["eyr"];
+                var eyrValid = Regex.IsMatch(eyr, @"^\d{4}$") && int.TryParse(eyr, out var eyrValue) &&
+                               eyrValue >= 2020 && eyrValue <= 2030;
+
+                var hgt = fields["hgt"];
+                var hgtValid = false;
+                var match = Regex.Match(hgt, @"^(\d{2,3})(cm|in)$");
+                if (match.Success)
+                {
+                    var value = int.Parse(match.Groups[1].Value);
+                    var isCm = match.Groups[2].Value == "cm";
+
+                    hgtValid = (isCm && value >= 150 && value <= 193) || (!isCm && value >= 59 && value <= 76);
+                }
+
+                var hcl = fields["hcl"];
+                var hclValid = Regex.IsMatch(hcl, @"^#(\d|[a-z]){6}$");
+
+                var ecl = fields["ecl"];
+                var eclValid = "amb blu brn gry grn hzl oth".Split(" ").Any(s => StringComparer.Ordinal.Equals(s, ecl));
+
+                var pid = fields["pid"];
+                var pidValid = Regex.IsMatch(pid, @"^\d{9}$");
+
+                return byrValid && iyrValid && eyrValid && hgtValid && hclValid && eclValid && pidValid;
+            }
+        }
+
         private sealed class Day3Map
         {
             private readonly string[] _input;
@@ -134,5 +226,29 @@ namespace AdventOfCode2020
             var filePath = Path.Combine(TestContext.CurrentContext.WorkDirectory, "../../../Input/", fileName);
             return File.ReadAllLines(filePath);
         }
+
+        private static string[] ReadEmptyLineSeparated(string fileName)
+        {
+            var result = new List<string>();
+            var filePath = Path.Combine(TestContext.CurrentContext.WorkDirectory, "../../../Input/", fileName);
+
+            using (var reader = new StreamReader(File.OpenRead(filePath)))
+            {
+                while (!reader.EndOfStream)
+                {
+                    var line = reader.ReadLine();
+                    var current = "";
+                    while (!string.IsNullOrWhiteSpace(line))
+                    {
+                        current += " " + line;
+                        line = reader.ReadLine();
+                    }
+                    result.Add(current);
+                }
+            }
+
+            return result.ToArray();
+        }
+
     }
 }
