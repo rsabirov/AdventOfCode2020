@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -118,6 +119,64 @@ namespace AdventOfCode2020
             var passports = inputs.Select(Day4Passport.Parse).ToArray();
 
             return passports.Count(p => p.HaveValidValues);
+        }
+        
+        [TestCase("Day5_test.txt", ExpectedResult = 357)]
+        [TestCase("Day5_problem.txt", ExpectedResult = 801)]
+        public long Day5_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            return inputs.Select(Day5Parse).Select(bp => bp.row * 8 + bp.col).Max();
+        }
+
+        [TestCase("Day5_problem.txt", ExpectedResult = 597)]
+        public long Day5_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+
+            var seats2 = inputs
+                .Select(Day5Parse)
+                .Select(bp => (long)bp.row * 8 + bp.col)
+                .Where(s => s > (0 * 8 + 7) && s < (127 * 8 + 0)) // removing first and last row
+                .OrderBy(_ => _)
+                .ToArray();
+
+            for (int i = 0; i < seats2.Length - 1; i++)
+            {
+                if (seats2[i + 1] - seats2[i] == 2)
+                    return seats2[i] + 1;
+            }
+
+            throw new InvalidOperationException("no solution");
+        }
+
+        private (int row, int col) Day5Parse(string b)
+        {
+            var l = 0;
+            var r = 128;
+            var first = b.Substring(0, 7);
+            foreach (var c in first)
+            {
+                if (c == 'F')
+                    r = r - (r - l) / 2;
+                if (c == 'B')
+                    l = l + (r - l) / 2;
+            }
+            var row = l;
+
+            l = 0;
+            r = 8;
+            var second = b.Substring(7, 3);
+            foreach (var c in second)
+            {
+                if (c == 'L')
+                    r = r - (r - l) / 2;
+                if (c == 'R')
+                    l = l + (r - l) / 2;
+            }
+            var col = l;
+
+            return (row, col);
         }
 
         private sealed class Day4Passport
@@ -249,6 +308,5 @@ namespace AdventOfCode2020
 
             return result.ToArray();
         }
-
     }
 }
