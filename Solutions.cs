@@ -127,7 +127,7 @@ namespace AdventOfCode2020
         public long Day5_1(string fileName)
         {
             var inputs = ReadAllLines(fileName);
-            return inputs.Select(Day5Parse).Select(bp => bp.row * 8 + bp.col).Max();
+            return inputs.Select(Day5Parse).Max();
         }
 
         [TestCase("Day5_problem.txt", ExpectedResult = 597)]
@@ -137,7 +137,6 @@ namespace AdventOfCode2020
 
             var seats2 = inputs
                 .Select(Day5Parse)
-                .Select(bp => (long)bp.row * 8 + bp.col)
                 .Where(s => s > (0 * 8 + 7) && s < (127 * 8 + 0)) // removing first and last row
                 .OrderBy(_ => _)
                 .ToArray();
@@ -207,33 +206,18 @@ namespace AdventOfCode2020
             return sum;
         }
 
-        private (int row, int col) Day5Parse(string b)
         {
-            var l = 0;
-            var r = 128;
-            var first = b.Substring(0, 7);
-            foreach (var c in first)
-            {
-                if (c == 'F')
-                    r = r - (r - l) / 2;
-                if (c == 'B')
-                    l = l + (r - l) / 2;
-            }
-            var row = l;
 
-            l = 0;
-            r = 8;
-            var second = b.Substring(7, 3);
-            foreach (var c in second)
-            {
-                if (c == 'L')
-                    r = r - (r - l) / 2;
-                if (c == 'R')
-                    l = l + (r - l) / 2;
-            }
-            var col = l;
 
-            return (row, col);
+        private int Day5Parse(string b)
+        {
+            var binaryString = b
+                .Replace('F', '0')
+                .Replace('B', '1')
+                .Replace('L', '0')
+                .Replace('R', '1');
+
+            return Convert.ToInt32(binaryString, 2);
         }
 
         private sealed class Day4Passport
