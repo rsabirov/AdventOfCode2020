@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 
@@ -148,6 +149,62 @@ namespace AdventOfCode2020
             }
 
             throw new InvalidOperationException("no solution");
+        }
+        
+        [TestCase("Day6_test.txt", ExpectedResult = 11)]
+        [TestCase("Day6_problem.txt", ExpectedResult = 6297)]
+        public long Day6_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var groups = new List<string>();
+
+            var buffer = new StringBuilder();
+            foreach (var input in inputs)
+            {
+                if (string.IsNullOrEmpty(input))
+                {
+                    groups.Add(buffer.ToString());
+                    buffer.Length = 0;
+                }
+                else
+                    buffer.Append(input);
+            }
+            if (buffer.Length > 0)
+                groups.Add(buffer.ToString());
+
+            return groups.Sum(g => g.Distinct().Count());
+        }
+
+        [TestCase("Day6_test.txt", ExpectedResult = 6)]
+        [TestCase("Day6_problem.txt", ExpectedResult = 3158)]
+        public long Day6_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var groups = new List<string>();
+
+            var buffer = new StringBuilder();
+            foreach (var input in inputs)
+            {
+                if (string.IsNullOrEmpty(input))
+                {
+                    groups.Add(buffer.ToString());
+                    buffer.Length = 0;
+                }
+                else
+                    buffer.AppendLine(input);
+            }
+            if (buffer.Length > 0)
+                groups.Add(buffer.ToString());
+
+            var sum = 0;
+            foreach (var g in groups)
+            {
+                var declaration = g.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+                var all = g.Distinct().Where(c => c != '\n' && c != '\r').ToArray();
+                sum += all.Count(c => declaration.All(s => s.Contains(c)));
+            }
+
+            return sum;
         }
 
         private (int row, int col) Day5Parse(string b)
