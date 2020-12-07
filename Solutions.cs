@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace AdventOfCode2020
@@ -36,9 +38,9 @@ namespace AdventOfCode2020
             for (int i = 0; i < input.Length; i++)
             {
                 for (int j = i + 1; j < input.Length; j++)
-                for (int k = j + 1; k < input.Length; k++)
-                    if (input[i] + input[j] + input[k] == 2020)
-                        return input[i] * input[j] * input[k];
+                    for (int k = j + 1; k < input.Length; k++)
+                        if (input[i] + input[j] + input[k] == 2020)
+                            return input[i] * input[j] * input[k];
             }
 
             throw new InvalidOperationException("Solution not found");
@@ -49,7 +51,7 @@ namespace AdventOfCode2020
         public int Day2_1(string fileName)
         {
             var inputs = ReadAllLines(fileName)
-                .Select(s => s.Split(new[] { ' ', '-', ':'}, StringSplitOptions.RemoveEmptyEntries))
+                .Select(s => s.Split(new[] { ' ', '-', ':' }, StringSplitOptions.RemoveEmptyEntries))
                 .Select(parts => (from: int.Parse(parts[0]), to: int.Parse(parts[1]), symbol: parts[2].Single(), password: parts[3]))
                 .ToArray();
 
@@ -121,7 +123,7 @@ namespace AdventOfCode2020
 
             return passports.Count(p => p.HaveValidValues);
         }
-        
+
         [TestCase("Day5_test.txt", ExpectedResult = 357)]
         [TestCase("Day5_problem.txt", ExpectedResult = 801)]
         public long Day5_1(string fileName)
@@ -149,7 +151,7 @@ namespace AdventOfCode2020
 
             throw new InvalidOperationException("no solution");
         }
-        
+
         [TestCase("Day6_test.txt", ExpectedResult = 11)]
         [TestCase("Day6_problem.txt", ExpectedResult = 6297)]
         public long Day6_1(string fileName)
@@ -206,8 +208,132 @@ namespace AdventOfCode2020
             return sum;
         }
 
+        [TestCase("Day7_test.txt", ExpectedResult = 4)]
+        [TestCase("Day7_problem.txt", ExpectedResult = 300)]
+        public long Day7_1(string fileName)
         {
+            var inputs = ReadAllLines(fileName);
+            var graph = new Day7Graph(inputs);
 
+            return graph.Search("shiny gold");
+        }
+
+        [TestCase("Day7_test.txt", ExpectedResult = 32)]
+        [TestCase("Day7_test2.txt", ExpectedResult = 126)]
+        [TestCase("Day7_problem.txt", ExpectedResult = 8030)]
+        public long Day7_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var graph = new Day7Graph(inputs);
+
+            return graph.Search2("shiny gold");
+        }
+
+        private sealed class Day7Graph
+        {
+            private int _count;
+            private readonly Dictionary<string, int> _indexes = new Dictionary<string, int>();
+            private readonly int[,] _cost = new int[1000, 1000];
+
+            public Day7Graph(string[] inputs)
+            {
+                foreach (var input in inputs)
+                {
+                    var (from, to) = ParseLine(input);
+                    var (fromIndex, toIndexes) = ConvertToIndexes((from, to));
+
+                    foreach (var index in toIndexes)
+                    {
+                        _cost[fromIndex, index.index] = index.count;
+                    }
+                }
+            }
+
+            public int Search2(string from)
+            {
+                var start = _indexes[from];
+                var q = new Queue<(int index, int count)>();
+                q.Enqueue((start, 1));
+
+                int sum = -1;
+                // DFS algo
+                while (q.Count > 0)
+                {
+                    var item = q.Dequeue();
+                    sum += item.count;
+
+                    for (int i = 0; i < _count; i++)
+                    {
+                        if (i != item.index && _cost[item.index, i] > 0)
+                            q.Enqueue((i, item.count * _cost[item.index, i]));
+                    }
+                }
+
+                return sum;
+            }
+
+            public int Search(string from)
+            {
+                var start = _indexes[from];
+                var q = new Queue<int>();
+                q.Enqueue(start);
+
+                var visited = new bool[_count];
+                // DFS algo
+                while (q.Count > 0)
+                {
+                    var item = q.Dequeue();
+                    visited[item] = true;
+
+                    for (int i = 0; i < _count; i++)
+                    {
+                        if (!visited[i] && _cost[i, item] > 0)
+                            q.Enqueue(i);
+                    }
+                }
+
+                return visited.Count(_ => _) - 1;
+            }
+
+            private (int from, (int index, int count)[] to) ConvertToIndexes((string @from, string[] to) value)
+            {
+                var regex = new Regex(@"^((?<count>\d+) )?(?<name>\w+ \w+)$");
+
+                int GetOrAdd(string v)
+                {
+                    var match = regex.Match(v);
+                    var name = match.Groups["name"].Value;
+                    if (_indexes.ContainsKey(name))
+                        return _indexes[name];
+                    _indexes[name] = _count;
+                    return _count++;
+                }
+
+                int GetCount(string v)
+                {
+                    var match = regex.Match(v);
+                    var countString = match.Groups.ContainsKey("count")
+                        ? match.Groups["count"].Value
+                        : "1";
+                    return int.Parse(countString);
+                }
+
+                return (GetOrAdd(value.from), value.to.Select(s => (index: GetOrAdd(s), count: GetCount(s))).ToArray());
+            }
+
+            private static (string from, string[] to) ParseLine(string l)
+            {
+                var regex = new Regex(@"^(?<from>[\w]+ [\w]+) bags? contains?(( no other bags\.)|( (?<to>\d+ \w+ \w+) bags?[,.]?)+)$");
+                var match = regex.Match(l);
+
+                var from = match.Groups["from"].Value;
+                var to = match.Groups.ContainsKey("to")
+                    ? match.Groups["to"].Captures.Select(c => c.Value).ToArray()
+                    : Array.Empty<string>();
+
+                return (from, to);
+            }
+        }
 
         private int Day5Parse(string b)
         {
@@ -316,7 +442,7 @@ namespace AdventOfCode2020
 
                     loc = (loc.x + offset.x, loc.y + offset.y);
                 } while (loc.y < _input.Length);
-                
+
                 return trees;
             }
         }
