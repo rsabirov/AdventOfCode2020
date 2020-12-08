@@ -228,6 +228,80 @@ namespace AdventOfCode2020
 
             return graph.Search2("shiny gold");
         }
+        
+        [TestCase("Day8_test.txt", ExpectedResult = 5)]
+        [TestCase("Day8_problem.txt", ExpectedResult = 1475)]
+        public long Day8_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+
+            if (Day8_InterpretCode(inputs, out var accumulator))
+                return accumulator;
+
+            throw new InvalidOperationException("No infinite loop detected");
+        }
+
+        [TestCase("Day8_test.txt", ExpectedResult = 8)]
+        [TestCase("Day8_problem.txt", ExpectedResult = 1270)]
+        public long Day8_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+
+            var ind = 0;
+            long accumulator;
+
+            string[] newInput = null;
+            do
+            {
+                newInput = inputs.ToArray();
+                var line = newInput[ind];
+
+                if (line.StartsWith("jmp"))
+                {
+                    newInput[ind] = "nop" + line.Substring(3);
+                }
+                else if (line.StartsWith("nop"))
+                {
+                    newInput[ind] = "jmp" + line.Substring(3);
+                }
+
+                ind++;
+            } while (Day8_InterpretCode(newInput, out accumulator));
+
+            return accumulator;
+        }
+
+        private static bool Day8_InterpretCode(string[] inputs, out long accumulator)
+        {
+            int offset = 0;
+            int acc = 0;
+            var visited = new HashSet<int>();
+
+            do
+            {
+                visited.Add(offset);
+                var line = inputs[offset];
+
+                var parts = line.Split(' ');
+                var arg = int.Parse(parts[1]);
+                switch (parts[0])
+                {
+                    case "jmp":
+                        offset += arg;
+                        break;
+                    case "acc":
+                        acc += arg;
+                        offset++;
+                        break;
+                    case "nop":
+                        offset++;
+                        break;
+                }
+            } while (!visited.Contains(offset) && offset < inputs.Length);
+
+            accumulator = acc;
+            return visited.Contains(offset);
+        }
 
         private sealed class Day7Graph
         {
