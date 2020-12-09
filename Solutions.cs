@@ -228,7 +228,7 @@ namespace AdventOfCode2020
 
             return graph.Search2("shiny gold");
         }
-        
+
         [TestCase("Day8_test.txt", ExpectedResult = 5)]
         [TestCase("Day8_problem.txt", ExpectedResult = 1475)]
         public long Day8_1(string fileName)
@@ -269,6 +269,57 @@ namespace AdventOfCode2020
             } while (Day8_InterpretCode(newInput, out accumulator));
 
             return accumulator;
+        }
+        
+        [TestCase("Day9_test.txt", 5, ExpectedResult = 127)]
+        [TestCase("Day9_problem.txt", 25, ExpectedResult = 3199139634)]
+        public long Day9_1(string fileName, int preambleSize)
+        {
+            var inputs = ReadAllLines(fileName);
+            var a = inputs.Select(long.Parse).ToArray();
+
+            return Day9_FindInvalidNumber(preambleSize, a);
+        }
+
+        [TestCase("Day9_test.txt", 5, ExpectedResult = 62)]
+        [TestCase("Day9_problem.txt", 25, ExpectedResult = 438559930)]
+        public long Day9_2(string fileName, int preambleSize)
+        {
+            var inputs = ReadAllLines(fileName);
+            var a = inputs.Select(long.Parse).ToArray();
+
+            var invNumber = Day9_FindInvalidNumber(preambleSize, a);
+            for (int size = 2; size < a.Length; size++)
+            {
+                for (int offset = 0; offset < a.Length - size; offset++)
+                {
+                    var subset = a.Skip(offset).Take(size);
+                    if (subset.Sum() == invNumber)
+                    {
+                        return subset.Max() + subset.Min();
+                    }
+                }
+            }
+            throw new InvalidOperationException("no solution");
+        }
+
+        private static long Day9_FindInvalidNumber(int preambleSize, long[] a)
+        {
+            for (int i = preambleSize; i < a.Length; i++)
+            {
+                var found = false;
+                for (int j = i - preambleSize; j < i && !found; j++)
+                {
+                    var targetSecondElement = a[i] - a[j];
+                    if (targetSecondElement != a[j])
+                        found = a.Skip(i - preambleSize).Take(preambleSize).Any(item => item == targetSecondElement);
+                }
+
+                if (!found)
+                    return a[i];
+            }
+
+            throw new InvalidOperationException("no solution");
         }
 
         private static bool Day8_InterpretCode(string[] inputs, out long accumulator)
