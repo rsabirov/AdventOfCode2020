@@ -1,21 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace AdventOfCode2020
 {
     public sealed class Solutions
     {
-        [TestCase("Day1_problem.txt", ExpectedResult = 960075)]
-        [TestCase("Day1_test.txt", ExpectedResult = 514579)]
-        public int Day1_1(string fileName)
+        [TestCase("Day01_problem.txt", ExpectedResult = 960075)]
+        [TestCase("Day01_test.txt", ExpectedResult = 514579)]
+        public int Day01_1(string fileName)
         {
             var input = ReadAllLines(fileName).Select(int.Parse).ToArray();
 
@@ -29,9 +26,9 @@ namespace AdventOfCode2020
             throw new InvalidOperationException("Solution not found");
         }
 
-        [TestCase("Day1_problem.txt", ExpectedResult = 212900130)]
-        [TestCase("Day1_test.txt", ExpectedResult = 241861950)]
-        public int Day1_2(string fileName)
+        [TestCase("Day01_problem.txt", ExpectedResult = 212900130)]
+        [TestCase("Day01_test.txt", ExpectedResult = 241861950)]
+        public int Day01_2(string fileName)
         {
             var input = ReadAllLines(fileName).Select(int.Parse).ToArray();
 
@@ -46,9 +43,9 @@ namespace AdventOfCode2020
             throw new InvalidOperationException("Solution not found");
         }
 
-        [TestCase("Day2_problem.txt", ExpectedResult = 550)]
-        [TestCase("Day2_test.txt", ExpectedResult = 2)]
-        public int Day2_1(string fileName)
+        [TestCase("Day02_problem.txt", ExpectedResult = 550)]
+        [TestCase("Day02_test.txt", ExpectedResult = 2)]
+        public int Day02_1(string fileName)
         {
             var inputs = ReadAllLines(fileName)
                 .Select(s => s.Split(new[] { ' ', '-', ':' }, StringSplitOptions.RemoveEmptyEntries))
@@ -62,9 +59,9 @@ namespace AdventOfCode2020
             return correctPasswordsCount;
         }
 
-        [TestCase("Day2_problem.txt", ExpectedResult = 634)]
-        [TestCase("Day2_test.txt", ExpectedResult = 1)]
-        public int Day2_2(string fileName)
+        [TestCase("Day02_problem.txt", ExpectedResult = 634)]
+        [TestCase("Day02_test.txt", ExpectedResult = 1)]
+        public int Day02_2(string fileName)
         {
             var inputs = ReadAllLines(fileName)
                 .Select(s => s.Split(new[] { ' ', '-', ':' }, StringSplitOptions.RemoveEmptyEntries))
@@ -78,22 +75,22 @@ namespace AdventOfCode2020
             return correctPasswordsCount;
         }
 
-        [TestCase("Day3_problem.txt", ExpectedResult = 169)]
-        [TestCase("Day3_test.txt", ExpectedResult = 7)]
-        public long Day3_1(string fileName)
+        [TestCase("Day03_problem.txt", ExpectedResult = 169)]
+        [TestCase("Day03_test.txt", ExpectedResult = 7)]
+        public long Day03_1(string fileName)
         {
             var inputs = ReadAllLines(fileName);
-            var map = new Day3Map(inputs);
+            var map = new Day03Map(inputs);
 
             return map.Trees((x: 3, y: 1));
         }
 
-        [TestCase("Day3_problem.txt", ExpectedResult = 7560370818)]
-        [TestCase("Day3_test.txt", ExpectedResult = 336)]
-        public long Day3_2(string fileName)
+        [TestCase("Day03_problem.txt", ExpectedResult = 7560370818)]
+        [TestCase("Day03_test.txt", ExpectedResult = 336)]
+        public long Day03_2(string fileName)
         {
             var inputs = ReadAllLines(fileName);
-            var map = new Day3Map(inputs);
+            var map = new Day03Map(inputs);
 
             return map.Trees((x: 1, y: 1))
                 * map.Trees((x: 3, y: 1))
@@ -102,43 +99,43 @@ namespace AdventOfCode2020
                 * map.Trees((x: 1, y: 2));
         }
 
-        [TestCase("Day4_test.txt", ExpectedResult = 2)]
-        [TestCase("Day4_problem.txt", ExpectedResult = 192)]
-        public long Day4_1(string fileName)
+        [TestCase("Day04_test.txt", ExpectedResult = 2)]
+        [TestCase("Day04_problem.txt", ExpectedResult = 192)]
+        public long Day04_1(string fileName)
         {
             var inputs = ReadEmptyLineSeparated(fileName);
-            var passports = inputs.Select(Day4Passport.Parse).ToArray();
+            var passports = inputs.Select(Day04Passport.Parse).ToArray();
 
             return passports.Count(p => p.HaveRequiredValues);
         }
 
-        [TestCase("Day4_valid.txt", ExpectedResult = 4)]
-        [TestCase("Day4_invalid.txt", ExpectedResult = 0)]
-        [TestCase("Day4_test.txt", ExpectedResult = 2)]
-        [TestCase("Day4_problem.txt", ExpectedResult = 101)]
-        public long Day4_2(string fileName)
+        [TestCase("Day04_valid.txt", ExpectedResult = 4)]
+        [TestCase("Day04_invalid.txt", ExpectedResult = 0)]
+        [TestCase("Day04_test.txt", ExpectedResult = 2)]
+        [TestCase("Day04_problem.txt", ExpectedResult = 101)]
+        public long Day04_2(string fileName)
         {
             var inputs = ReadEmptyLineSeparated(fileName);
-            var passports = inputs.Select(Day4Passport.Parse).ToArray();
+            var passports = inputs.Select(Day04Passport.Parse).ToArray();
 
             return passports.Count(p => p.HaveValidValues);
         }
 
-        [TestCase("Day5_test.txt", ExpectedResult = 357)]
-        [TestCase("Day5_problem.txt", ExpectedResult = 801)]
-        public long Day5_1(string fileName)
+        [TestCase("Day05_test.txt", ExpectedResult = 357)]
+        [TestCase("Day05_problem.txt", ExpectedResult = 801)]
+        public long Day05_1(string fileName)
         {
             var inputs = ReadAllLines(fileName);
-            return inputs.Select(Day5Parse).Max();
+            return inputs.Select(Day05Parse).Max();
         }
 
-        [TestCase("Day5_problem.txt", ExpectedResult = 597)]
-        public long Day5_2(string fileName)
+        [TestCase("Day05_problem.txt", ExpectedResult = 597)]
+        public long Day05_2(string fileName)
         {
             var inputs = ReadAllLines(fileName);
 
             var seats2 = inputs
-                .Select(Day5Parse)
+                .Select(Day05Parse)
                 .Where(s => s > (0 * 8 + 7) && s < (127 * 8 + 0)) // removing first and last row
                 .OrderBy(_ => _)
                 .ToArray();
@@ -152,9 +149,9 @@ namespace AdventOfCode2020
             throw new InvalidOperationException("no solution");
         }
 
-        [TestCase("Day6_test.txt", ExpectedResult = 11)]
-        [TestCase("Day6_problem.txt", ExpectedResult = 6297)]
-        public long Day6_1(string fileName)
+        [TestCase("Day06_test.txt", ExpectedResult = 11)]
+        [TestCase("Day06_problem.txt", ExpectedResult = 6297)]
+        public long Day06_1(string fileName)
         {
             var inputs = ReadAllLines(fileName);
             var groups = new List<string>();
@@ -176,9 +173,9 @@ namespace AdventOfCode2020
             return groups.Sum(g => g.Distinct().Count());
         }
 
-        [TestCase("Day6_test.txt", ExpectedResult = 6)]
-        [TestCase("Day6_problem.txt", ExpectedResult = 3158)]
-        public long Day6_2(string fileName)
+        [TestCase("Day06_test.txt", ExpectedResult = 6)]
+        [TestCase("Day06_problem.txt", ExpectedResult = 3158)]
+        public long Day06_2(string fileName)
         {
             var inputs = ReadAllLines(fileName);
             var groups = new List<string>();
@@ -208,42 +205,42 @@ namespace AdventOfCode2020
             return sum;
         }
 
-        [TestCase("Day7_test.txt", ExpectedResult = 4)]
-        [TestCase("Day7_problem.txt", ExpectedResult = 300)]
-        public long Day7_1(string fileName)
+        [TestCase("Day07_test.txt", ExpectedResult = 4)]
+        [TestCase("Day07_problem.txt", ExpectedResult = 300)]
+        public long Day07_1(string fileName)
         {
             var inputs = ReadAllLines(fileName);
-            var graph = new Day7Graph(inputs);
+            var graph = new Day07Graph(inputs);
 
             return graph.Search("shiny gold");
         }
 
-        [TestCase("Day7_test.txt", ExpectedResult = 32)]
-        [TestCase("Day7_test2.txt", ExpectedResult = 126)]
-        [TestCase("Day7_problem.txt", ExpectedResult = 8030)]
-        public long Day7_2(string fileName)
+        [TestCase("Day07_test.txt", ExpectedResult = 32)]
+        [TestCase("Day07_test2.txt", ExpectedResult = 126)]
+        [TestCase("Day07_problem.txt", ExpectedResult = 8030)]
+        public long Day07_2(string fileName)
         {
             var inputs = ReadAllLines(fileName);
-            var graph = new Day7Graph(inputs);
+            var graph = new Day07Graph(inputs);
 
             return graph.Search2("shiny gold");
         }
 
-        [TestCase("Day8_test.txt", ExpectedResult = 5)]
-        [TestCase("Day8_problem.txt", ExpectedResult = 1475)]
-        public long Day8_1(string fileName)
+        [TestCase("Day08_test.txt", ExpectedResult = 5)]
+        [TestCase("Day08_problem.txt", ExpectedResult = 1475)]
+        public long Day08_1(string fileName)
         {
             var inputs = ReadAllLines(fileName);
 
-            if (Day8_InterpretCode(inputs, out var accumulator))
+            if (Day08_InterpretCode(inputs, out var accumulator))
                 return accumulator;
 
             throw new InvalidOperationException("No infinite loop detected");
         }
 
-        [TestCase("Day8_test.txt", ExpectedResult = 8)]
-        [TestCase("Day8_problem.txt", ExpectedResult = 1270)]
-        public long Day8_2(string fileName)
+        [TestCase("Day08_test.txt", ExpectedResult = 8)]
+        [TestCase("Day08_problem.txt", ExpectedResult = 1270)]
+        public long Day08_2(string fileName)
         {
             var inputs = ReadAllLines(fileName);
 
@@ -266,29 +263,29 @@ namespace AdventOfCode2020
                 }
 
                 ind++;
-            } while (Day8_InterpretCode(newInput, out accumulator));
+            } while (Day08_InterpretCode(newInput, out accumulator));
 
             return accumulator;
         }
         
-        [TestCase("Day9_test.txt", 5, ExpectedResult = 127)]
-        [TestCase("Day9_problem.txt", 25, ExpectedResult = 3199139634)]
-        public long Day9_1(string fileName, int preambleSize)
+        [TestCase("Day09_test.txt", 5, ExpectedResult = 127)]
+        [TestCase("Day09_problem.txt", 25, ExpectedResult = 3199139634)]
+        public long Day09_1(string fileName, int preambleSize)
         {
             var inputs = ReadAllLines(fileName);
             var a = inputs.Select(long.Parse).ToArray();
 
-            return Day9_FindInvalidNumber(preambleSize, a);
+            return Day09_FindInvalidNumber(preambleSize, a);
         }
 
-        [TestCase("Day9_test.txt", 5, ExpectedResult = 62)]
-        [TestCase("Day9_problem.txt", 25, ExpectedResult = 438559930)]
-        public long Day9_2(string fileName, int preambleSize)
+        [TestCase("Day09_test.txt", 5, ExpectedResult = 62)]
+        [TestCase("Day09_problem.txt", 25, ExpectedResult = 438559930)]
+        public long Day09_2(string fileName, int preambleSize)
         {
             var inputs = ReadAllLines(fileName);
             var a = inputs.Select(long.Parse).ToArray();
 
-            var invNumber = Day9_FindInvalidNumber(preambleSize, a);
+            var invNumber = Day09_FindInvalidNumber(preambleSize, a);
             for (int size = 2; size < a.Length; size++)
             {
                 for (int offset = 0; offset < a.Length - size; offset++)
@@ -303,7 +300,7 @@ namespace AdventOfCode2020
             throw new InvalidOperationException("no solution");
         }
 
-        private static long Day9_FindInvalidNumber(int preambleSize, long[] a)
+        private static long Day09_FindInvalidNumber(int preambleSize, long[] a)
         {
             for (int i = preambleSize; i < a.Length; i++)
             {
@@ -322,7 +319,7 @@ namespace AdventOfCode2020
             throw new InvalidOperationException("no solution");
         }
 
-        private static bool Day8_InterpretCode(string[] inputs, out long accumulator)
+        private static bool Day08_InterpretCode(string[] inputs, out long accumulator)
         {
             int offset = 0;
             int acc = 0;
@@ -354,13 +351,13 @@ namespace AdventOfCode2020
             return visited.Contains(offset);
         }
 
-        private sealed class Day7Graph
+        private sealed class Day07Graph
         {
             private int _count;
             private readonly Dictionary<string, int> _indexes = new Dictionary<string, int>();
             private readonly int[,] _cost = new int[1000, 1000];
 
-            public Day7Graph(string[] inputs)
+            public Day07Graph(string[] inputs)
             {
                 foreach (var input in inputs)
                 {
@@ -460,7 +457,7 @@ namespace AdventOfCode2020
             }
         }
 
-        private int Day5Parse(string b)
+        private int Day05Parse(string b)
         {
             var binaryString = b
                 .Replace('F', '0')
@@ -471,17 +468,17 @@ namespace AdventOfCode2020
             return Convert.ToInt32(binaryString, 2);
         }
 
-        private sealed class Day4Passport
+        private sealed class Day04Passport
         {
             public bool HaveRequiredValues { get; private set; }
             public bool HaveValidValues { get; private set; }
 
-            public static Day4Passport Parse(string line)
+            public static Day04Passport Parse(string line)
             {
                 var parts = line.Split(" ", StringSplitOptions.RemoveEmptyEntries);
                 var fields = parts.ToDictionary(i => i.Split(":")[0], i => i.Split(":")[1]);
 
-                var result = new Day4Passport
+                var result = new Day04Passport
                 {
                     HaveRequiredValues = IsHaveRequiredValues(fields),
                     HaveValidValues = IsHaveValidValues(fields)
@@ -539,12 +536,12 @@ namespace AdventOfCode2020
             }
         }
 
-        private sealed class Day3Map
+        private sealed class Day03Map
         {
             private readonly string[] _input;
             private readonly int _width;
 
-            public Day3Map(string[] input)
+            public Day03Map(string[] input)
             {
                 _input = input;
                 _width = input[0].Length;
