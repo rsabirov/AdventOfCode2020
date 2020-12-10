@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.VisualStudio.TestPlatform.Common.Interfaces;
 using NUnit.Framework;
 
 namespace AdventOfCode2020
@@ -299,6 +300,102 @@ namespace AdventOfCode2020
             }
             throw new InvalidOperationException("no solution");
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        [TestCase("Day10_test.txt", ExpectedResult = 35)]
+        [TestCase("Day10_test2.txt", ExpectedResult = 220)]
+        [TestCase("Day10_problem.txt", ExpectedResult = 2812)]
+        public long Day10_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName)
+                .Select(int.Parse)
+                .Concat(new [] { 0 })
+                .OrderBy(_ => _)
+                .ToArray();
+
+            var diff1 = 0;
+            var diff3 = 1;
+            var prev = inputs[0];
+            for (int i = 1; i < inputs.Length; i++)
+            {
+                var diff = inputs[i] - prev;
+                if (diff == 1)
+                    diff1++;
+                else if (diff == 3)
+                    diff3++;
+                else
+                    throw new InvalidOperationException($"Unexpected diff = {diff}");
+
+                prev = inputs[i];
+            }
+
+            return diff1 * diff3;
+        }
+
+
+
+        [TestCase("Day10_test.txt", ExpectedResult = 8)]
+        [TestCase("Day10_test2.txt", ExpectedResult = 19208)]
+        [TestCase("Day10_problem.txt", ExpectedResult = 386869246296064)]
+        public long Day10_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName)
+                .Select(int.Parse)
+                .OrderBy(_ => _)
+                .ToList();
+            inputs.Add(inputs.Max() + 3);
+            
+            var ans = new long[inputs.Max() + 1];
+            ans[0] = 1;
+            for (int i = 0; i < inputs.Count; i++)
+            {
+                var val = inputs[i];
+                var curr = ans[val - 1];
+                if (val >= 2)
+                    curr += ans[val - 2];
+                if (val >= 3)
+                    curr += ans[val - 3];
+
+                ans[val] = curr;
+            }
+
+            return ans[ans.Length - 1];
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         private static long Day09_FindInvalidNumber(int preambleSize, long[] a)
         {
