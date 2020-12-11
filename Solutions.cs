@@ -268,7 +268,7 @@ namespace AdventOfCode2020
 
             return accumulator;
         }
-        
+
         [TestCase("Day09_test.txt", 5, ExpectedResult = 127)]
         [TestCase("Day09_problem.txt", 25, ExpectedResult = 3199139634)]
         public long Day09_1(string fileName, int preambleSize)
@@ -301,21 +301,6 @@ namespace AdventOfCode2020
             throw new InvalidOperationException("no solution");
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         [TestCase("Day10_test.txt", ExpectedResult = 35)]
         [TestCase("Day10_test2.txt", ExpectedResult = 220)]
         [TestCase("Day10_problem.txt", ExpectedResult = 2812)]
@@ -323,7 +308,7 @@ namespace AdventOfCode2020
         {
             var inputs = ReadAllLines(fileName)
                 .Select(int.Parse)
-                .Concat(new [] { 0 })
+                .Concat(new[] { 0 })
                 .OrderBy(_ => _)
                 .ToArray();
 
@@ -346,8 +331,6 @@ namespace AdventOfCode2020
             return diff1 * diff3;
         }
 
-
-
         [TestCase("Day10_test.txt", ExpectedResult = 8)]
         [TestCase("Day10_test2.txt", ExpectedResult = 19208)]
         [TestCase("Day10_problem.txt", ExpectedResult = 386869246296064)]
@@ -358,7 +341,7 @@ namespace AdventOfCode2020
                 .OrderBy(_ => _)
                 .ToList();
             inputs.Add(inputs.Max() + 3);
-            
+
             var ans = new long[inputs.Max() + 1];
             ans[0] = 1;
             for (int i = 0; i < inputs.Count; i++)
@@ -386,16 +369,144 @@ namespace AdventOfCode2020
 
 
 
+        [TestCase("Day11_test.txt", ExpectedResult = 37)]
+        [TestCase("Day11_problem.txt", ExpectedResult = 2338)]
+        public long Day11_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var map = new Day11Map(inputs);
 
+            Console.WriteLine(map.Dump());
 
+            while (map.SimulateOneStep(occupiedFunc: Day11Map.OccupiedSeats, minOccupiedSeats: 4))
+            {
+                Console.WriteLine(map.Dump());
+            }
+            Console.WriteLine(map.Dump());
 
+            return map.OccupiedSeats();
+        }
 
+        [TestCase("Day11_test.txt", ExpectedResult = 26)]
+        [TestCase("Day11_problem.txt", ExpectedResult = 2134)]
+        public long Day11_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var map = new Day11Map(inputs);
 
+            Console.WriteLine(map.Dump());
+            while (map.SimulateOneStep(occupiedFunc: Day11Map.OccupiedSeats2, minOccupiedSeats: 5))
+            {
+                Console.WriteLine(map.Dump());
+            }
 
+            Console.WriteLine(map.Dump());
 
+            return map.OccupiedSeats();
+        }
 
+        private sealed class Day11Map
+        {
+            private static readonly int[] _dx = { -1, +0, +1, +1, +1, +0, -1, -1 };
+            private static readonly int[] _dy = { -1, -1, -1, +0, +1, +1, +1, +0 };
 
+            private readonly int _width;
+            private readonly int _height;
+            private char[,] _map;
+            
+            public Day11Map(string[] inputs)
+            {
+                _width = inputs[0].Length;
+                _height = inputs.Length;
+                _map = new char[_width + 2, _height + 2]; // adding extra border rows
+                for (int x = 1; x <= _width; x++)
+                {
+                    for (int y = 1; y <= _height; y++)
+                        _map[x, y] = inputs[y - 1][x - 1];
+                }
+            }
 
+            public long OccupiedSeats()
+            {
+                return Enumerable.Range(1, _width)
+                    .Sum(x => Enumerable.Range(1, _height).Count(y => _map[x, y] == '#'));
+            }
+
+            public static long OccupiedSeats(char[,] map, int x, int y)
+            {
+                return Enumerable.Range(0, _dx.Length)
+                    .Count(i => map[x + _dx[i], y + _dy[i]] == '#');
+            }
+
+            public static long OccupiedSeats2(char[,] map, int x, int y)
+            {
+                var xLen = map.GetLength(0);
+                var yLen = map.GetLength(1);
+                var max = Math.Max(xLen, yLen);
+                var seen = 0;
+
+                for (int i = 0; i < _dx.Length; i++)
+                {
+                    for (int d = 1; d <= max; d++)
+                    {
+                        var nx = x + _dx[i] * d;
+                        var ny = y + _dy[i] * d;
+
+                        if (!(nx > 0 && nx < xLen && ny > 0 && ny < yLen))
+                            break;
+                        if (map[nx, ny] == '#')
+                        {
+                            seen++;
+                            break;
+                        }
+
+                        if (map[nx, ny] == 'L')
+                            break;
+                    }
+                }
+
+                return seen;
+            }
+
+            public string Dump()
+            {
+                return Enumerable.Range(1, _height)
+                    .Select(y => new string(Enumerable.Range(1, _width).Select(x => _map[x, y]).ToArray()))
+                    .Join(Environment.NewLine);
+            }
+
+            public bool SimulateOneStep(Func<char[,], int, int, long> occupiedFunc, int minOccupiedSeats)
+            {
+                var newMap = (char[,])_map.Clone();
+
+                for (int x = 1; x <= _width; x++)
+                {
+                    for (int y = 1; y <= _height; y++)
+                    {
+                        var occupiedSeats = occupiedFunc(_map, x, y);
+                        if (_map[x, y] == 'L' && occupiedSeats == 0)
+                        {
+                            newMap[x, y] = '#';
+                        }
+                        else if (_map[x, y] == '#' && occupiedSeats >= minOccupiedSeats)
+                        {
+                            newMap[x, y] = 'L';
+                        }
+                    }
+                }
+
+                var changed = false;
+                for (int x = 1; x <= _width; x++)
+                {
+                    for (int y = 1; y <= _height; y++)
+                        if (_map[x, y] != newMap[x, y])
+                            changed = true;
+                }
+
+                _map = newMap;
+                return changed;
+            }
+        }
 
         private static long Day09_FindInvalidNumber(int preambleSize, long[] a)
         {
@@ -695,4 +806,5 @@ namespace AdventOfCode2020
             return result.ToArray();
         }
     }
+
 }
