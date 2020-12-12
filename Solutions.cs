@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.XPath;
 using Microsoft.VisualStudio.TestPlatform.Common.Interfaces;
 using NUnit.Framework;
 
@@ -344,9 +346,8 @@ namespace AdventOfCode2020
 
             var ans = new long[inputs.Max() + 1];
             ans[0] = 1;
-            for (int i = 0; i < inputs.Count; i++)
+            foreach (var val in inputs)
             {
-                var val = inputs[i];
                 var curr = ans[val - 1];
                 if (val >= 2)
                     curr += ans[val - 2];
@@ -358,17 +359,7 @@ namespace AdventOfCode2020
 
             return ans[ans.Length - 1];
         }
-
-
-
-
-
-
-
-
-
-
-
+        
         [TestCase("Day11_test.txt", ExpectedResult = 37)]
         [TestCase("Day11_problem.txt", ExpectedResult = 2338)]
         public long Day11_1(string fileName)
@@ -403,6 +394,112 @@ namespace AdventOfCode2020
             Console.WriteLine(map.Dump());
 
             return map.OccupiedSeats();
+        }
+
+        [TestCase("Day12_test.txt", ExpectedResult = 25)]
+        [TestCase("Day12_problem.txt", ExpectedResult = 590)]
+        public long Day12_1(string fileName)
+        {
+            var dirs = new[]
+            {
+                (x: +1, y: +0),
+                (x: +0, y: +1),
+                (x: -1, y: +0),
+                (x: +0, y: -1)
+            };
+
+            var inputs = ReadAllLines(fileName);
+            var pos = (x: 0, y: 0);
+            var dir = 0;
+
+            foreach (var input in inputs)
+            {
+                var c = input[0];
+                var p = int.Parse(input.Substring(1));
+
+                switch (c)
+                {
+                    case 'N':
+                        pos.y -= p;
+                        break;
+                    case 'S':
+                        pos.y += p;
+                        break;
+                    case 'E':
+                        pos.x += p;
+                        break;
+                    case 'W':
+                        pos.x -= p;
+                        break;
+                    case 'L':
+                        p = p % 360;
+                        p = p / 90;
+                        p = p % 4;
+                        dir = (4 + (dir - p) % 4) % 4;
+                        break;
+                    case 'R':
+                        p = p % 360;
+                        p = p / 90;
+                        dir = (dir + p) % 4;
+                        break;
+                    case 'F':
+                        pos = (x: pos.x + dirs[dir].x * p, y: pos.y + dirs[dir].y * p);
+                        break;
+                }
+            }
+
+            return Math.Abs(pos.x) + Math.Abs(pos.y);
+        }
+        
+        [TestCase("Day12_test.txt", ExpectedResult = 286)]
+        [TestCase("Day12_problem.txt", ExpectedResult = 42013)]
+        public long Day12_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var pos = (x: 0L, y: 0L);
+            var wp = (x: +10L, y: -1L);
+
+            foreach (var input in inputs)
+            {
+                var c = input[0];
+                var p = int.Parse(input.Substring(1));
+
+                switch (c)
+                {
+                    case 'N':
+                        wp.y -= p;
+                        break;
+                    case 'S':
+                        wp.y += p;
+                        break;
+                    case 'E':
+                        wp.x += p;
+                        break;
+                    case 'W':
+                        wp.x -= p;
+                        break;
+                    case 'L':
+                        wp = Rotate(wp, p);
+                        break;
+                    case 'R':
+                        wp = Rotate(wp, -p);
+                        break;
+                    case 'F':
+                        pos = (x: pos.x + p * wp.x, y: pos.y + p * wp.y);
+                        break;
+                }
+            }
+
+            return Math.Abs(pos.x) + Math.Abs(pos.y);
+
+
+            (long x, long y) Rotate((long x, long y) c, int p)
+            {
+                var angle = p * Math.PI / 180;
+                return (
+                    x: (int)Math.Round(c.x * Math.Cos(angle) + c.y * Math.Sin(angle)),
+                    y: (int)Math.Round(c.y * Math.Cos(angle) - c.x * Math.Sin(angle)));
+            }
         }
 
         private sealed class Day11Map
