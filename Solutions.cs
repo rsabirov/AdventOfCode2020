@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
+using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml.XPath;
-using Microsoft.VisualStudio.TestPlatform.Common.Interfaces;
+using System.Threading;
 using NUnit.Framework;
 
 namespace AdventOfCode2020
@@ -359,7 +358,7 @@ namespace AdventOfCode2020
 
             return ans[ans.Length - 1];
         }
-        
+
         [TestCase("Day11_test.txt", ExpectedResult = 37)]
         [TestCase("Day11_problem.txt", ExpectedResult = 2338)]
         public long Day11_1(string fileName)
@@ -450,7 +449,7 @@ namespace AdventOfCode2020
 
             return Math.Abs(pos.x) + Math.Abs(pos.y);
         }
-        
+
         [TestCase("Day12_test.txt", ExpectedResult = 286)]
         [TestCase("Day12_problem.txt", ExpectedResult = 42013)]
         public long Day12_2(string fileName)
@@ -502,6 +501,91 @@ namespace AdventOfCode2020
             }
         }
 
+
+
+
+
+
+        [TestCase("Day13_test.txt", ExpectedResult = 295)]
+        [TestCase("Day13_problem.txt", ExpectedResult = 261)]
+        public long Day13_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var time = long.Parse(inputs[0]);
+            var times = inputs[1]
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Where(i => i != "x")
+                .Select(long.Parse)
+                .OrderBy(_ => _)
+                .ToArray();
+
+            var ordered = times
+                .Select(t => new {t = t, left = t - time % t})
+                .OrderBy(i => i.left)
+                .ToArray();
+            var earliest = ordered.First();
+
+            return earliest.left * earliest.t;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        [TestCase("Day13_test.txt", ExpectedResult = 1068781)]
+        [TestCase("Day13_problem.txt", ExpectedResult = 807435693182510)]
+        public long Day13_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var times = inputs[1]
+                .Split(',')
+                .Select((item, i) => new { item, i })
+                .Where(x => x.item != "x")
+                .Select(x => new { bus = int.Parse(x.item), index = x.i })
+                .ToArray();
+
+            var r = times.Select(t => t.bus).ToArray();             // base 
+            var a = times.Select(t => t.bus - t.index).ToArray();   // presentation
+
+            return (long)Solve(r, a);
+
+            // Chinese remainder theorem solution
+            BigInteger Solve(int[] n, int[] a)
+            {
+                BigInteger prod = n
+                    .Select(i => new BigInteger(i))
+                    .Aggregate(BigInteger.One, (i, j) => i * j);
+
+                BigInteger sum = 0;
+                for (int i = 0; i < n.Length; i++)
+                {
+                    var p = prod / n[i];
+                    sum += a[i] * ModularInverse(p, n[i]) * p;
+                }
+                return sum % prod;
+            }
+
+            int ModularInverse(BigInteger a, long mod)
+            {
+                var b = a % mod;
+                for (int x = 1; x < mod; x++)
+                {
+                    if (b * x % mod == 1)
+                        return x;
+                }
+                return 1;
+            }
+        }
+      
         private sealed class Day11Map
         {
             private static readonly int[] _dx = { -1, +0, +1, +1, +1, +0, -1, -1 };
@@ -510,7 +594,7 @@ namespace AdventOfCode2020
             private readonly int _width;
             private readonly int _height;
             private char[,] _map;
-            
+
             public Day11Map(string[] inputs)
             {
                 _width = inputs[0].Length;
