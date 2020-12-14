@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -501,11 +502,6 @@ namespace AdventOfCode2020
             }
         }
 
-
-
-
-
-
         [TestCase("Day13_test.txt", ExpectedResult = 295)]
         [TestCase("Day13_problem.txt", ExpectedResult = 261)]
         public long Day13_1(string fileName)
@@ -520,26 +516,13 @@ namespace AdventOfCode2020
                 .ToArray();
 
             var ordered = times
-                .Select(t => new {t = t, left = t - time % t})
+                .Select(t => new { t = t, left = t - time % t })
                 .OrderBy(i => i.left)
                 .ToArray();
             var earliest = ordered.First();
 
             return earliest.left * earliest.t;
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         [TestCase("Day13_test.txt", ExpectedResult = 1068781)]
         [TestCase("Day13_problem.txt", ExpectedResult = 807435693182510)]
@@ -585,7 +568,148 @@ namespace AdventOfCode2020
                 return 1;
             }
         }
-      
+
+        [TestCase("Day14_test.txt", ExpectedResult = 165)]
+        [TestCase("Day14_problem.txt", ExpectedResult = 5875750429995)]
+        public ulong Day14_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var mem = new Day14Memory();
+            foreach (var line in inputs)
+            {
+                var parts = line
+                    .Split(new[] {'=', ' '}, StringSplitOptions.RemoveEmptyEntries)
+                    .ToArray();
+
+                if (parts[0] == "mask")
+                    mem.SetMask(parts[1]);
+                else
+                {
+                    var index = ulong.Parse(Regex.Match(parts[0], "\\d+").Value);
+                    var value = ulong.Parse(parts[1]);
+                    mem.SetValue(index, value);
+                }
+            }
+
+            return mem.GetSum();
+        }
+
+        [TestCase("Day14_test2.txt", ExpectedResult = 208)]
+        [TestCase("Day14_problem.txt", ExpectedResult = 5875750429995)]
+        public ulong Day14_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var mem = new Day14Memory2();
+            foreach (var line in inputs)
+            {
+                var parts = line
+                    .Split(new[] {'=', ' '}, StringSplitOptions.RemoveEmptyEntries)
+                    .ToArray();
+
+                if (parts[0] == "mask")
+                    mem.SetMask(parts[1]);
+                else
+                {
+                    var index = ulong.Parse(Regex.Match(parts[0], "\\d+").Value);
+                    var value = ulong.Parse(parts[1]);
+                    mem.SetValue(index, value);
+                }
+            }
+
+            return mem.GetSum();
+        }
+
+        private sealed class Day14Memory2
+        {
+            private readonly IDictionary<ulong, ulong> _map = new Dictionary<ulong, ulong>();
+            private ulong _mask1;
+            private int[] _floatingMaskIndexes;
+
+            public void SetMask(string mask)
+            {
+                _mask1 = Convert.ToUInt64(mask.Replace('X', '0'), 2);
+                _floatingMaskIndexes = mask.Reverse()
+                    .Select((c, i) => (c, i))
+                    .Where(item => item.c == 'X')
+                    .Select(item => item.i)
+                    .ToArray();
+            }
+
+            public void SetValue(ulong index, ulong value)
+            {
+                foreach (var address in GetIndexes(index, _mask1, _floatingMaskIndexes))
+                    _map[address] = value;
+            }
+
+            private IEnumerable<ulong> GetIndexes(ulong index, ulong mask1, int[] floatingMaskIndexes)
+            {
+                var size = Pow(2, floatingMaskIndexes.Length);
+                for (int i = 0; i < size; i++)
+                {
+                    ulong fmask0 = 0;
+                    ulong fmask1 = 0;
+                    for (var index1 = 0; index1 < floatingMaskIndexes.Length; index1++)
+                    {
+                        var ind = floatingMaskIndexes[index1];
+                        if ((i & (1 << index1)) > 0) // "ind" bit is set
+                            fmask1 = fmask1 | (1ul << ind);
+                        else
+                            fmask0 = fmask0 | (1ul << ind);
+                    }
+
+                    var value = index | mask1; // applying base mask
+                    value = value | fmask1;    // applying floating mask 1
+                    value = value & ~fmask0;    // applying floating mask 0
+
+                    yield return value;
+                }
+            }
+            
+            private static int Pow(int bas, int exp)
+            {
+                return Enumerable
+                    .Repeat(bas, exp)
+                    .Aggregate(1, (a, b) => a * b);
+            }
+
+            public ulong GetSum()
+            {
+                return _map.Values.Aggregate(0ul, (a, b) => a + b);
+            }
+        }
+
+        private sealed class Day14Memory
+        {
+            private readonly IDictionary<ulong, ulong> _map = new Dictionary<ulong, ulong>();
+            private ulong _mask0;
+            private ulong _mask1;
+
+            public void SetMask(string mask)
+            {
+                _mask0 = Convert.ToUInt64(mask.Replace('0', 'Y').Replace('X', '0').Replace('1', '0').Replace('Y', '1'), 2);
+                _mask1 = Convert.ToUInt64(mask.Replace('X', '0'), 2);
+            }
+
+            public void SetValue(ulong index, ulong value)
+            {
+                value = value | _mask1;
+
+                // val    mask0    res  
+                // 1      1        0    
+                // 1      0        1    
+                // 0      1        0    
+                // 0      0        0    
+                value = value & ~_mask0;
+
+                _map[index] = value;
+            }
+
+            public ulong GetSum()
+            {
+                return _map.Values.Aggregate(0ul, (a, b) => a + b);
+            }
+        }
+
         private sealed class Day11Map
         {
             private static readonly int[] _dx = { -1, +0, +1, +1, +1, +0, -1, -1 };
@@ -987,5 +1111,4 @@ namespace AdventOfCode2020
             return result.ToArray();
         }
     }
-
 }
