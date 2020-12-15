@@ -595,7 +595,7 @@ namespace AdventOfCode2020
         }
 
         [TestCase("Day14_test2.txt", ExpectedResult = 208)]
-        [TestCase("Day14_problem.txt", ExpectedResult = 5875750429995)]
+        [TestCase("Day14_problem.txt", ExpectedResult = 5272149590143)]
         public ulong Day14_2(string fileName)
         {
             var inputs = ReadAllLines(fileName);
@@ -618,7 +618,60 @@ namespace AdventOfCode2020
 
             return mem.GetSum();
         }
+        
+        [TestCase("Day15_test.txt", 2020, ExpectedResult = 436)]
+        [TestCase("Day15_problem.txt", 2020, ExpectedResult = 240)]
+        [TestCase("Day15_test.txt", 30_000_000, ExpectedResult = 175594)]
+        [TestCase("Day15_problem.txt", 30_000_000, ExpectedResult = 505)]
+        public int Day15_1_2(string fileName, int turns)
+        {
+            var inputs = ReadAllLines(fileName);
+            var numbers = inputs[0].Split(',').Select(int.Parse).ToArray();
 
+            var spokenAtTurn = new Dictionary<int, (int recentTurn, int turnBeforeRecent)>();
+            var lastSpoken = 0;
+            for (int turn = 1; turn <= turns; turn++)
+            {
+                var spokenNumber = 0;
+                if (turn <= numbers.Length)
+                {
+                    spokenNumber = numbers[turn - 1];
+                    spokenAtTurn[spokenNumber] = (turn, -1);
+                }
+                else
+                {
+                    if (spokenAtTurn.TryGetValue(lastSpoken, out var lastSpokenInfo))
+                    {
+                        if (lastSpokenInfo.turnBeforeRecent == -1)
+                        {
+                            spokenNumber = turn - lastSpokenInfo.recentTurn - 1;
+                            if (spokenAtTurn.TryGetValue(spokenNumber, out var infoToUpdate))
+                                spokenAtTurn[spokenNumber] = (turn, infoToUpdate.recentTurn);
+                            else
+                                spokenAtTurn[spokenNumber] = (turn, -1);
+                        }
+                        else
+                        {
+                            spokenNumber = lastSpokenInfo.recentTurn - lastSpokenInfo.turnBeforeRecent;
+                            if (spokenAtTurn.TryGetValue(spokenNumber, out var infoToUpdate))
+                                spokenAtTurn[spokenNumber] = (turn, infoToUpdate.recentTurn);
+                            else
+                                spokenAtTurn[spokenNumber] = (turn, -1);
+                        }
+                    }
+                    else
+                    {
+                        spokenAtTurn[lastSpoken] = (turn - 1, 0);
+                        spokenNumber = 0;
+                    }
+                }
+
+                lastSpoken = spokenNumber;
+            }
+
+            return lastSpoken;
+        }
+        
         private sealed class Day14Memory2
         {
             private readonly IDictionary<ulong, ulong> _map = new Dictionary<ulong, ulong>();
