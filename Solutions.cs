@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -671,7 +672,121 @@ namespace AdventOfCode2020
 
             return lastSpoken;
         }
-        
+
+        [TestCase("Day16_test.txt", ExpectedResult = 71)]
+        [TestCase("Day16_problem.txt", ExpectedResult = 25916)]
+        public int Day16_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+
+            var day16 = new Day16(inputs);
+            return day16.CalcErrorRate();
+        }
+
+        [TestCase("Day16_test.txt", "class", ExpectedResult = 1)]
+        [TestCase("Day16_problem.txt", "departure", ExpectedResult = 25916)]
+        public long Day16_2(string fileName, string field)
+        {
+            var inputs = ReadAllLines(fileName);
+
+            var day16 = new Day16(inputs);
+            return day16.GetYourTicketField(field);
+        }
+
+        private sealed class Day16
+        {
+            private readonly Dictionary<string, (int low, int hi)[]> _rules;
+            private readonly int[] _yourTicket;
+            private readonly int[][] _nearbyTickets;
+
+            public Day16(string[] inputs)
+            {
+                // parsing the rules
+                _rules = new Dictionary<string, (int low, int hi)[]>();
+                foreach (var rule in inputs.TakeWhile(s => !string.IsNullOrEmpty(s)))
+                {
+                    var name = rule.Split(':')[0];
+                    var rangesRaw = rule.Split(':')[1].Split(new[] { "or", " " }, StringSplitOptions.RemoveEmptyEntries);
+                    var ranges = rangesRaw
+                        .Select(r => r.Split('-'))
+                        .Select(parts => (low: int.Parse(parts[0]), hi: int.Parse(parts[1])))
+                        .ToArray();
+
+                    _rules[name] = ranges;
+                }
+                // parsing your ticket
+                _yourTicket = inputs.SkipWhile(s => s != "your ticket:").Skip(1).Take(1).Single()
+                    .Split(',').Select(int.Parse).ToArray();
+
+                // parsing nearby tickets
+                _nearbyTickets = inputs.SkipWhile(s => s != "nearby tickets:").Skip(1)
+                    .Select(row => row.Split(',').Select(int.Parse).ToArray()).ToArray();
+            }
+
+            public int CalcErrorRate()
+            {
+                var errorRate = 0;
+                foreach (var ticket in _nearbyTickets)
+                {
+                    foreach (var field in ticket)
+                    {
+                        if (!_rules.Any(r => r.Value.Any(range => range.low <= field && range.hi >= field)))
+                            errorRate += field;
+                    }
+                }
+
+                return errorRate;
+            }
+
+            public long GetYourTicketField(string field)
+            {
+                var fieldsCount = _yourTicket.Length;
+                var allTickets = _nearbyTickets.Concat(new[] {_yourTicket}).ToArray();
+                var possiblePerIndex = new HashSet<string>[fieldsCount];
+                // get matching row per each field
+                for (int i = 0; i < fieldsCount; i++)
+                {
+                    var validRules = allTickets
+                        .Select(t => GetMatchingRules(t[i]))
+                        .Where(rules => rules.Count > 0)
+                        .Aggregate((h1, h2) =>
+                        {
+                            h1.IntersectWith(h2);
+                            return h1;
+                        });
+
+                    possiblePerIndex[i] = validRules;
+                }
+                
+                // clean up unambiguity 
+                while (possiblePerIndex.Any(rules => rules.Count != 1))
+                {
+                    var exactMatches = possiblePerIndex.Where(rules => rules.Count == 1).ToArray();
+                    // remove exact matches from other matches
+                    foreach (var rules in possiblePerIndex.Where(rules => rules.Count > 1))
+                    {
+                        foreach (var exactMatch in exactMatches)
+                            rules.Remove(exactMatch.Single());
+                    }
+                }
+                // get target field 
+                var targetFieldIndexes = Enumerable
+                    .Range(0, possiblePerIndex.Length)
+                    .Where(i => possiblePerIndex[i].Single().StartsWith(field));
+
+                return targetFieldIndexes
+                    .Select(i => (long)_yourTicket[i])
+                    .Aggregate(1L, (v1, v2) => v1 * v2);
+            }
+
+            private HashSet<string> GetMatchingRules(int field)
+            {
+                return _rules.Where(r => r.Value.Any(range => range.low <= field && range.hi >= field))
+                    .Select(r => r.Key)
+                    .ToHashSet();
+            }
+        }
+
         private sealed class Day14Memory2
         {
             private readonly IDictionary<ulong, ulong> _map = new Dictionary<ulong, ulong>();
