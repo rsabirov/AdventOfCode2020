@@ -8,6 +8,7 @@ using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Xml.Serialization;
 using NUnit.Framework;
 
 namespace AdventOfCode2020
@@ -579,7 +580,7 @@ namespace AdventOfCode2020
             foreach (var line in inputs)
             {
                 var parts = line
-                    .Split(new[] {'=', ' '}, StringSplitOptions.RemoveEmptyEntries)
+                    .Split(new[] { '=', ' ' }, StringSplitOptions.RemoveEmptyEntries)
                     .ToArray();
 
                 if (parts[0] == "mask")
@@ -604,7 +605,7 @@ namespace AdventOfCode2020
             foreach (var line in inputs)
             {
                 var parts = line
-                    .Split(new[] {'=', ' '}, StringSplitOptions.RemoveEmptyEntries)
+                    .Split(new[] { '=', ' ' }, StringSplitOptions.RemoveEmptyEntries)
                     .ToArray();
 
                 if (parts[0] == "mask")
@@ -619,7 +620,7 @@ namespace AdventOfCode2020
 
             return mem.GetSum();
         }
-        
+
         [TestCase("Day15_test.txt", 2020, ExpectedResult = 436)]
         [TestCase("Day15_problem.txt", 2020, ExpectedResult = 240)]
         [TestCase("Day15_test.txt", 30_000_000, ExpectedResult = 175594)]
@@ -684,7 +685,7 @@ namespace AdventOfCode2020
         }
 
         [TestCase("Day16_test.txt", "class", ExpectedResult = 1)]
-        [TestCase("Day16_problem.txt", "departure", ExpectedResult = 25916)]
+        [TestCase("Day16_problem.txt", "departure", ExpectedResult = 2564529489989)]
         public long Day16_2(string fileName, string field)
         {
             var inputs = ReadAllLines(fileName);
@@ -692,6 +693,178 @@ namespace AdventOfCode2020
             var day16 = new Day16(inputs);
             return day16.GetYourTicketField(field);
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        [TestCase("Day17_test.txt", ExpectedResult = 112)]
+        [TestCase("Day17_problem.txt", ExpectedResult = 313)]
+        public int Day17_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var cubesMap = new Day17CubeMap(inputs);
+
+            for (int i = 0; i < 6; i++)
+                cubesMap.Next(dimension: 3);
+
+            return cubesMap.Active;
+        }
+
+        [TestCase("Day17_test.txt", ExpectedResult = 848)]
+        [TestCase("Day17_problem.txt", ExpectedResult = 2640)]
+        public int Day17_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var cubesMap = new Day17CubeMap(inputs);
+
+            for (int i = 0; i < 6; i++)
+                cubesMap.Next(dimension: 4);
+
+            return cubesMap.Active;
+        }
+
+        private sealed class Day17CubeMap
+        {
+            private const int Max = 30;
+            private const int Mid = 15;
+            private bool[,,,] _cube = new bool[Max, Max, Max, Max];
+
+            public Day17CubeMap(string[] inputs)
+            {
+                var map = inputs.Select(l => l.Select(c => c == '#').ToArray()).ToArray();
+                for (int i = 0; i < map.GetLength(0); i++)
+                    for (int j = 0; j < map[i].Length; j++)
+                    {
+                        _cube[Mid + i, Mid + j, Mid, Mid] = map[i][j];
+                        Active += map[i][j] ? 1 : 0;
+                    }
+
+                // creating diff4d
+                Diffs4d = Diffs3d
+                    .Concat(
+                        Diffs3d.Select(i => (i.x, i.y, i.z, v: +1)).Concat(new []{ (x: 0, y: 0, z: 0, v: +1) })
+                    )
+                    .Concat(
+                        Diffs3d.Select(i => (i.x, i.y, i.z, v: -1)).Concat(new[] { (x: 0, y: 0, z: 0, v: -1) })
+                    )
+                    .ToArray();
+            }
+
+            public int Active { get; private set; }
+
+            public void Next(int dimension)
+            {
+                Active = 0;
+                var newCube = (bool[,,,])_cube.Clone();
+
+                for (int x = 1; x < Max - 1; x++)
+                    for (int y = 1; y < Max - 1; y++)
+                        for (int z = 1; z < Max - 1; z++)
+                            for (int v = 1; v < Max - 1; v++)
+                            {
+                                var n = Neighbors(_cube, x, y, z, v, dimension);
+                                newCube[x, y, z, v] = _cube[x, y, z, v] && (n == 2 || n == 3) || !_cube[x, y, z, v] && n == 3;
+                                Active += newCube[x, y, z, v] ? 1 : 0;
+                            }
+
+                _cube = newCube;
+            }
+
+            private int Neighbors(bool[,,,] cube, int x, int y, int z, int v, int dimension)
+            {
+                var neighbors = 0;
+                var diffs = dimension == 3 ? Diffs3d : Diffs4d;
+
+                foreach (var diff in diffs)
+                    if (cube[x + diff.x, y + diff.y, z + diff.z, v + diff.v])
+                        neighbors++;
+
+                return neighbors;
+            }
+
+            private static (int x, int y, int z, int v)[] Diffs4d;
+
+            private static readonly (int x, int y, int z, int v)[] Diffs3d = new[]
+            {
+                // slice 0
+                (x: -1, y: -1, z: +0, +0),
+                (x: +0, y: -1, z: +0, +0),
+                (x: +1, y: -1, z: +0, +0),
+                (x: +1, y: +0, z: +0, +0),
+                (x: +1, y: +1, z: +0, +0),
+                (x: +0, y: +1, z: +0, +0),
+                (x: -1, y: +1, z: +0, +0),
+                (x: -1, y: +0, z: +0, +0),
+                // slice -1         , +0
+                (x: +0, y: +0, z: -1, +0),
+                (x: -1, y: -1, z: -1, +0),
+                (x: +0, y: -1, z: -1, +0),
+                (x: +1, y: -1, z: -1, +0),
+                (x: +1, y: +0, z: -1, +0),
+                (x: +1, y: +1, z: -1, +0),
+                (x: +0, y: +1, z: -1, +0),
+                (x: -1, y: +1, z: -1, +0),
+                (x: -1, y: +0, z: -1, +0),
+                // slice +1         , +0
+                (x: +0, y: +0, z: +1, +0),
+                (x: -1, y: -1, z: +1, +0),
+                (x: +0, y: -1, z: +1, +0),
+                (x: +1, y: -1, z: +1, +0),
+                (x: +1, y: +0, z: +1, +0),
+                (x: +1, y: +1, z: +1, +0),
+                (x: +0, y: +1, z: +1, +0),
+                (x: -1, y: +1, z: +1, +0),
+                (x: -1, y: +0, z: +1, +0),
+            };
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         private sealed class Day16
         {
@@ -741,7 +914,7 @@ namespace AdventOfCode2020
             public long GetYourTicketField(string field)
             {
                 var fieldsCount = _yourTicket.Length;
-                var allTickets = _nearbyTickets.Concat(new[] {_yourTicket}).ToArray();
+                var allTickets = _nearbyTickets.Concat(new[] { _yourTicket }).ToArray();
                 var possiblePerIndex = new HashSet<string>[fieldsCount];
                 // get matching row per each field
                 for (int i = 0; i < fieldsCount; i++)
@@ -757,7 +930,7 @@ namespace AdventOfCode2020
 
                     possiblePerIndex[i] = validRules;
                 }
-                
+
                 // clean up unambiguity 
                 while (possiblePerIndex.Any(rules => rules.Count != 1))
                 {
@@ -832,7 +1005,7 @@ namespace AdventOfCode2020
                     yield return value;
                 }
             }
-            
+
             private static int Pow(int bas, int exp)
             {
                 return Enumerable
