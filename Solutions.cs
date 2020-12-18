@@ -735,6 +735,208 @@ namespace AdventOfCode2020
             return cubesMap.Active;
         }
 
+        [TestCase("Day18_test.txt", ExpectedResult = 13757)]
+        [TestCase("Day18_problem.txt", ExpectedResult = 313)]
+        public BigInteger Day18_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            return inputs.Select(Day18Evaluator.Evaluate)
+                .Aggregate((a, b) => a + b);
+        }
+
+        [TestCase("Day18_test.txt", ExpectedResult = 13757)]
+        [TestCase("Day18_problem.txt", ExpectedResult = 313)]
+        public BigInteger Day18_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            return inputs.Select(Day18Evaluator.Evaluate)
+                .Aggregate((a, b) => a + b);
+        }
+
+        private sealed class Day18Evaluator
+        {
+            private enum TokenType
+            {
+                Number,
+                Operator,
+                OpenBrackets,
+                CloseBrackets
+            }
+
+            public static BigInteger Evaluate(string s)
+            {
+                var tokens = Tokenize(s);
+
+                var outQueue = new Queue<Token>();
+                var opStack = new Stack<Token>();
+                // https://en.wikipedia.org/wiki/Shunting-yard_algorithm
+                foreach (var token in tokens)
+                {
+                    switch (token)
+                    {
+                        case Token tok when tok.TokenType == TokenType.Number:
+                            outQueue.Enqueue(tok);
+                            break;
+
+                        case Token tok when tok.TokenType == TokenType.Operator:
+                            opStack.TryPeek(out var tok1);
+                            while (tok1 != null && tok1.TokenType == TokenType.Operator 
+                                                && tok1.Priority > token.Priority)
+                            {
+                                outQueue.Enqueue(opStack.Pop());
+                                opStack.TryPeek(out tok1);
+                            }
+                            opStack.Push(token);
+                            break;
+
+                        case Token tok when tok.TokenType == TokenType.OpenBrackets:
+                            opStack.Push(token);
+                            break;
+
+                        case Token tok when tok.TokenType == TokenType.CloseBrackets:
+                            opStack.TryPop(out var tok2);
+                            while (tok2 != null && tok2.TokenType != TokenType.OpenBrackets)
+                            {
+                                outQueue.Enqueue(tok2);
+                                opStack.TryPop(out tok2);
+                            }
+                            break;
+
+                        default:
+                            throw new InvalidOperationException();
+                    }
+                }
+                while (opStack.Count > 0)
+                    outQueue.Enqueue(opStack.Pop());
+
+                // calc
+                var operands = new Stack<BigInteger>();
+                while (outQueue.Count > 0)
+                {
+                    var a = outQueue.Dequeue();
+                    if (a.TokenType == TokenType.Number)
+                        operands.Push(a.Num);
+                    else
+                    {
+                        var a1 = operands.Pop();
+                        var a2 = operands.Pop();
+                        if (a.Op == "+")
+                            operands.Push(a1 + a2);
+                        else
+                            operands.Push(a1 * a2);
+                    }
+                }
+
+                return operands.Pop();
+            }
+
+            private static Token[] Tokenize(string s)
+            {
+                var regex = new Regex(@"\d+|\+|\*|\(|\)");
+                var tokens = regex.Matches(s.Replace(" ", ""))
+                    .Select(m => m.Value)
+                    .Select(i =>
+                    {
+                        switch (i)
+                        {
+                            case var ss when int.TryParse(ss, out var num):
+                                return Token.Number(num);
+                            case "+":
+                            case "*":
+                                return Token.Operator(i);
+                            case "(":
+                                return Token.OpenBrackets();
+                            case ")":
+                                return Token.CloseBrackets();
+                            default:
+                                throw new InvalidOperationException($"Not supported '{i}'");
+                        }
+                    })
+                    .ToArray();
+                return tokens;
+            }
+
+            private sealed class Token
+            {
+                public TokenType TokenType { get; }
+                public int Num { get; }
+                public string Op { get; }
+                public int Priority { get; }
+
+                public Token(int num)
+                {
+                    TokenType = TokenType.Number;
+                    Num = num;
+                }
+
+                private Token(string op)
+                {
+                    TokenType = TokenType.Operator;
+                    Priority = op == "+" ? 1 : 0;
+                    Op = op;
+                }
+
+                private Token(TokenType tokenType)
+                {
+                    TokenType = tokenType;
+                }
+
+                public static Token Number(int v)
+                {
+                    return new Token(v);
+                }
+
+                public static Token Operator(string op)
+                {
+                    return new Token(op);
+                }
+
+                public static Token OpenBrackets()
+                {
+                    return new Token(TokenType.OpenBrackets);
+                }
+
+                public static Token CloseBrackets()
+                {
+                    return new Token(TokenType.CloseBrackets);
+                }
+
+                public override string ToString()
+                {
+                    switch (TokenType)
+                    {
+                        case TokenType.Number:
+                            return Num.ToString();
+                        case TokenType.Operator:
+                            return Op;
+                        case TokenType.OpenBrackets:
+                            return "(";
+                        case TokenType.CloseBrackets:
+                            return ")";
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         private sealed class Day17CubeMap
         {
             private const int Max = 30;
@@ -754,7 +956,7 @@ namespace AdventOfCode2020
                 // creating diff4d
                 Diffs4d = Diffs3d
                     .Concat(
-                        Diffs3d.Select(i => (i.x, i.y, i.z, v: +1)).Concat(new []{ (x: 0, y: 0, z: 0, v: +1) })
+                        Diffs3d.Select(i => (i.x, i.y, i.z, v: +1)).Concat(new[] { (x: 0, y: 0, z: 0, v: +1) })
                     )
                     .Concat(
                         Diffs3d.Select(i => (i.x, i.y, i.z, v: -1)).Concat(new[] { (x: 0, y: 0, z: 0, v: -1) })
