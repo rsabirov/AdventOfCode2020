@@ -753,6 +753,141 @@ namespace AdventOfCode2020
                 .Aggregate((a, b) => a + b);
         }
 
+
+
+
+        
+        [TestCase("Day19_test.txt", ExpectedResult = 2)]
+        [TestCase("Day19_problem.txt", ExpectedResult = 190)]
+        public int Day19_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+
+            var rules = inputs.TakeWhile(s => s != string.Empty).ToArray();
+            var processor = new Day19RulesProcessor(rules);
+
+            return inputs.Skip(rules.Length + 1).Count(message => processor.IsValidMessage(message));
+        }
+
+        [TestCase("Day19_test2.txt", ExpectedResult = 12)]
+        [TestCase("Day19_problem2.txt", ExpectedResult = 311)]
+        public int Day19_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+
+            var rules = inputs.TakeWhile(s => s != string.Empty).ToArray();
+            var processor = new Day19RulesProcessor(rules);
+
+            return inputs.Skip(rules.Length + 1).Count(message => processor.IsValidMessage(message));
+        }
+
+        private sealed class Day19RulesProcessor
+        {
+            private readonly IDictionary<int, Rule> _rules = new Dictionary<int, Rule>();
+
+            public Day19RulesProcessor(string[] rawRules)
+            {
+                var rules = rawRules.Select(rr => new Rule(rr)).ToList();
+                // move constant rules to _rules
+                foreach (var rule in rules.Where(r => r.IsConstant).ToArray())
+                {
+                    rules.Remove(rule);
+                    _rules.Add(rule.Number, rule);
+                }
+
+                // rules derivation
+                var anyMatch = true;
+                while (!_rules.ContainsKey(0) && anyMatch)
+                {
+                    anyMatch = false;
+                    foreach (var rule in rules.ToArray())
+                    {
+                        rule.Apply(_rules);
+                        if (rule.IsConstant)
+                        {
+                            rules.Remove(rule);
+                            _rules.Add(rule.Number, rule);
+                            anyMatch = true;
+                        }
+                    }
+                }
+            }
+
+            public bool IsValidMessage(string message)
+            {
+                return _rules[0].IsMatch(message);
+            }
+
+            private sealed class Rule
+            {
+                private static readonly Regex IsConstantRegex = new Regex(@"^[a-z\s()|]+$", RegexOptions.Compiled);
+                private static readonly Regex IndexRegex = new Regex(@"\d+(?!})", RegexOptions.Compiled);
+                // special cases
+                private static readonly Regex SingleIndex = new Regex(@"^(?<beforeIndex>[^\d]+)(?<index>\d+)(?<afterIndex>[^\d]+)?$");
+
+                private string _value;
+
+                public int Number { get; }
+                public bool IsConstant { get; private set; }
+
+                public Rule(string rawRule)
+                {
+                    var parts = rawRule.Split(':');
+                    var val = parts[1].Replace("\"", "");
+
+                    _value = val.Trim();
+                    Number = int.Parse(parts[0]);
+                    IsConstant = IsConstantRegex.IsMatch(val);
+                }
+
+                public void Apply(IDictionary<int, Rule> rules)
+                {
+                    var singleIndexMatch = SingleIndex.Match(_value);
+                    if (singleIndexMatch.Success && int.Parse(singleIndexMatch.Groups["index"].Value) == Number)
+                    {
+                        // if self reference is end of the string, then "1: r 1" => "1: r+"
+                        if (!singleIndexMatch.Groups["afterIndex"].Success)
+                        {
+                            _value = $"({singleIndexMatch.Groups["beforeIndex"].Value})+";
+                            IsConstant = true;
+                            return;
+                        }
+
+                        var before = singleIndexMatch.Groups["beforeIndex"].Value;
+                        var after = singleIndexMatch.Groups["afterIndex"].Value;
+
+
+                        // for some reason "Balancing Groups" didn't work
+                        // _value = $"?<open>{before})+(?<close-open>{after})+(?(open)(?!)";
+                        var parts = Enumerable.Range(1, 5)
+                            .Select(i => $"{before}" + "{" + i + "}" + $"{after}" + "{" + i + "}");
+                        _value = $"({string.Join("|", parts)})";
+                        IsConstant = true;
+                        return;
+                    }
+
+                    _value = IndexRegex.Replace(_value, match =>
+                    {
+                        var index = int.Parse(match.Value);
+                        return rules.TryGetValue(index, out var rule)
+                            ? rule._value.Contains("|") ? $"({rule._value})" : rule._value
+                            : match.Value;
+                    });
+
+                    IsConstant = !IndexRegex.IsMatch(_value);
+                }
+
+                public bool IsMatch(string message)
+                {
+                    if (!IsConstant)
+                        throw new InvalidOperationException("Rule is not constant");
+
+                    var regex = new Regex($"^{_value}$", RegexOptions.IgnorePatternWhitespace);
+                    return regex.IsMatch(message);
+                }
+            }
+        }
+
         private sealed class Day18Evaluator
         {
             private enum TokenType
@@ -780,7 +915,7 @@ namespace AdventOfCode2020
 
                         case Token tok when tok.TokenType == TokenType.Operator:
                             opStack.TryPeek(out var tok1);
-                            while (tok1 != null && tok1.TokenType == TokenType.Operator 
+                            while (tok1 != null && tok1.TokenType == TokenType.Operator
                                                 && tok1.Priority > token.Priority)
                             {
                                 outQueue.Enqueue(opStack.Pop());
@@ -920,23 +1055,6 @@ namespace AdventOfCode2020
             }
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         private sealed class Day17CubeMap
         {
             private const int Max = 30;
@@ -1031,42 +1149,6 @@ namespace AdventOfCode2020
                 (x: -1, y: +0, z: +1, +0),
             };
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         private sealed class Day16
         {
