@@ -735,27 +735,25 @@ namespace AdventOfCode2020
             return cubesMap.Active;
         }
 
-        [TestCase("Day18_test.txt", ExpectedResult = 13757)]
-        [TestCase("Day18_problem.txt", ExpectedResult = 313)]
-        public BigInteger Day18_1(string fileName)
+        [TestCase("Day18_test.txt", ExpectedResult = "13754")]
+        [TestCase("Day18_problem.txt", ExpectedResult = "31142189909908")]
+        public string Day18_1(string fileName)
         {
             var inputs = ReadAllLines(fileName);
-            return inputs.Select(Day18Evaluator.Evaluate)
-                .Aggregate((a, b) => a + b);
+            return inputs.Select(s => Day18Evaluator.Evaluate(s, ignorePriorities: true))
+                .Aggregate((a, b) => a + b)
+                .ToString();
         }
 
-        [TestCase("Day18_test.txt", ExpectedResult = 13757)]
-        [TestCase("Day18_problem.txt", ExpectedResult = 313)]
-        public BigInteger Day18_2(string fileName)
+        [TestCase("Day18_test.txt", ExpectedResult = "23622")]
+        [TestCase("Day18_problem.txt", ExpectedResult = "323912478287549")]
+        public string Day18_2(string fileName)
         {
             var inputs = ReadAllLines(fileName);
-            return inputs.Select(Day18Evaluator.Evaluate)
-                .Aggregate((a, b) => a + b);
+            return inputs.Select(s => Day18Evaluator.Evaluate(s, false))
+                .Aggregate((a, b) => a + b)
+                .ToString();
         }
-
-
-
-
         
         [TestCase("Day19_test.txt", ExpectedResult = 2)]
         [TestCase("Day19_problem.txt", ExpectedResult = 190)]
@@ -898,7 +896,7 @@ namespace AdventOfCode2020
                 CloseBrackets
             }
 
-            public static BigInteger Evaluate(string s)
+            public static BigInteger Evaluate(string s, bool ignorePriorities)
             {
                 var tokens = Tokenize(s);
 
@@ -916,7 +914,7 @@ namespace AdventOfCode2020
                         case Token tok when tok.TokenType == TokenType.Operator:
                             opStack.TryPeek(out var tok1);
                             while (tok1 != null && tok1.TokenType == TokenType.Operator
-                                                && tok1.Priority > token.Priority)
+                                                && (ignorePriorities ||tok1.Priority > token.Priority))
                             {
                                 outQueue.Enqueue(opStack.Pop());
                                 opStack.TryPeek(out tok1);
