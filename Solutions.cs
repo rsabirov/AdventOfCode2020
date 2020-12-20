@@ -754,7 +754,7 @@ namespace AdventOfCode2020
                 .Aggregate((a, b) => a + b)
                 .ToString();
         }
-        
+
         [TestCase("Day19_test.txt", ExpectedResult = 2)]
         [TestCase("Day19_problem.txt", ExpectedResult = 190)]
         public int Day19_1(string fileName)
@@ -777,6 +777,76 @@ namespace AdventOfCode2020
             var processor = new Day19RulesProcessor(rules);
 
             return inputs.Skip(rules.Length + 1).Count(message => processor.IsValidMessage(message));
+        }
+
+        [TestCase("Day20_test.txt", ExpectedResult = 2)]
+        [TestCase("Day20_problem.txt", ExpectedResult = 190)]
+        public int Day20_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+
+            var tiles = inputs
+                .SplitIntoBatch(string.IsNullOrEmpty)
+                .Select(batch => new Day20Tile(batch))
+                .ToArray();
+
+            var freq = new Dictionary<int, List<Day20Tile>>();
+            foreach (var tile in tiles)
+            {
+                foreach (var border in tile.Borders)
+                {
+                    var list = freq.ContainsKey(border) ? freq[border] : new List<Day20Tile>();
+                    list.Add(tile);
+                    freq[border] = list;
+                }
+            }
+
+            var rr = freq.GroupBy(r => r.Value.Count).ToList();
+
+            throw new NotImplementedException();
+        }
+
+        private sealed class Day20Tile
+        {
+            private static readonly Regex IdRegex = new Regex("(\\d+)");
+
+            public int Id { get; }
+            public bool[,] Data { get; }
+            public int[] Borders { get; }
+
+            public Day20Tile(string[] rawData)
+            {
+                Id = int.Parse(IdRegex.Match(rawData[0]).Groups[1].Value);
+                var size = rawData[1].Length;
+                Data = new bool[size, size];
+                for (int i = 0; i < size; i++)
+                    for (int j = 0; j < size; j++)
+                        Data[i, j] = rawData[i + 1][j] == '#';
+
+                int a1 = 0, b1 = 0, c1 = 0, d1 = 0;
+                int a2 = 0, b2 = 0, c2= 0, d2 = 0;
+                for (int i = 0; i < size; i++)
+                {
+                    if (Data[i, 0])
+                        a1 += 1 << i;
+                    if (Data[size - i - 1, 0])
+                        a2 += 1 << i;
+                    if (Data[0, i])
+                        b1 += 1 << (i + 1);
+                    if (Data[0, size - i - 1])
+                        b2 += 1 << i;
+                    if (Data[size - 1, i])
+                        c1 += 1 << i;
+                    if (Data[size - 1, size - i - 1])
+                        c2 += 1 << i;
+                    if (Data[i, size - 1])
+                        d1 += 1 << i;
+                    if (Data[size - i - 1, size - 1])
+                        d2 += 1 << i;
+                }
+
+                Borders = new[] { a1, b1, c1, d1, a2, b2, c2, d2 };
+            }
         }
 
         private sealed class Day19RulesProcessor
@@ -914,7 +984,7 @@ namespace AdventOfCode2020
                         case Token tok when tok.TokenType == TokenType.Operator:
                             opStack.TryPeek(out var tok1);
                             while (tok1 != null && tok1.TokenType == TokenType.Operator
-                                                && (ignorePriorities ||tok1.Priority > token.Priority))
+                                                && (ignorePriorities || tok1.Priority > token.Priority))
                             {
                                 outQueue.Enqueue(opStack.Pop());
                                 opStack.TryPeek(out tok1);
