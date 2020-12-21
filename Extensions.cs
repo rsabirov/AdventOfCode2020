@@ -28,5 +28,24 @@ namespace AdventOfCode2020
             if (buffer.Count > 0)
                 yield return buffer.ToArray();
         }
+
+        public static TValue GetOrCreate<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key,
+            Func<TKey, TValue> valueFactory)
+        {
+            if (dictionary.TryGetValue(key, out var value))
+                return value;
+
+            value = valueFactory(key);
+            dictionary[key] = value;
+
+            return value;
+        }
+
+        public static void AddRange<T>(this HashSet<T> hashSet, IEnumerable<T> values)
+        {
+            foreach (var value in values) 
+                hashSet.Add(value);
+        }
+
     }
 }

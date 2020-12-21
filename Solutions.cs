@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -804,6 +805,60 @@ namespace AdventOfCode2020
             var rr = freq.GroupBy(r => r.Value.Count).ToList();
 
             throw new NotImplementedException();
+        }
+        
+        [TestCase("Day21_test.txt", ExpectedResult = 5)]
+        [TestCase("Day21_problem.txt", ExpectedResult = 2230)]
+        public int Day21_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+
+            var regex = new Regex(@"^((?<product>\s*[a-z]+)\s)+(\(contains ((?<allergen>[a-z]+)[,\s]*)*\))?$");
+            var items = new List<(HashSet<string> ingredients, HashSet<string> allergens)>();
+            foreach (var input in inputs)
+            {
+                var match = regex.Match(input);
+                var products = match.Groups["product"].Captures.Select(c => c.Value).ToHashSet();
+                var allergens = match.Groups["allergen"].Captures.Select(c => c.Value).ToHashSet();
+                
+                items.Add((products, allergens));
+            }
+
+            var allergensInProducts = new Dictionary<string, HashSet<string>>();
+            foreach (var item in items)
+            {
+                foreach (var allergen in item.allergens)
+                {
+                    var existingIngredients = allergensInProducts.GetOrCreate(allergen, _ => new HashSet<string>());
+                    var newIngredients = new HashSet<string>(item.ingredients);
+                    
+                    if (existingIngredients.Count == 0)
+                        existingIngredients.UnionWith(newIngredients);
+                    else
+                        existingIngredients.IntersectWith(newIngredients);
+                }
+            }
+
+            var allProducts = items.SelectMany(i => i.ingredients);
+            var allergicProducts = allergensInProducts.SelectMany(kv => kv.Value).ToHashSet();
+            
+            //return allProducts.Count(p => !allergicProducts.Contains(p));
+            var result = new List<(string ingr, string allerg)>();
+            while (allergensInProducts.Count > 0)
+            {
+                var kv = allergensInProducts.First(kv => kv.Value.Count == 1);
+                var ingredient = kv.Value.First();
+
+                allergensInProducts.Remove(kv.Key);
+                foreach (var allergensInProduct in allergensInProducts) 
+                    allergensInProduct.Value.Remove(ingredient);
+
+                result.Add((ingr: ingredient, allerg: kv.Key));
+            }
+
+            var a = string.Join(",", result.OrderBy(kv => kv.allerg).Select(kv => kv.ingr));
+
+            return 0;
         }
 
         private sealed class Day20Tile
