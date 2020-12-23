@@ -827,6 +827,111 @@ namespace AdventOfCode2020
             return solver.GetDangerousIngredients();
         }
 
+        [TestCase("Day22_test.txt", ExpectedResult = 306)]
+        [TestCase("Day22_problem.txt", ExpectedResult = 32677)]
+        public int Day22_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+
+            var game = new Day22Game(inputs);
+            game.PlayGame1();
+
+            return game.CalcWinnerScore();
+        }
+        
+        [TestCase("Day22_test.txt", ExpectedResult = 306)]
+        [TestCase("Day22_problem.txt", ExpectedResult = 32677)]
+        public int Day22_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+
+            var game = new Day22Game(inputs);
+            game.PlayGame2();
+
+            return game.CalcWinnerScore();
+        }
+
+        private sealed class Day22Game
+        {
+            private readonly Queue<int> _player1;
+            private readonly Queue<int> _player2;
+
+            public Day22Game(string[] inputs)
+            {
+                var batches = inputs.SplitIntoBatch(string.IsNullOrEmpty).ToArray();
+                _player1 = new Queue<int>(batches[0].Skip(1).Select(int.Parse));
+                _player2 = new Queue<int>(batches[1].Skip(1).Select(int.Parse));
+            }
+
+            private Day22Game(Day22Game original)
+            {
+                _player1 = new Queue<int>(original._player1);
+                _player2 = new Queue<int>(original._player2);
+            }
+
+            public void PlayGame1()
+            {
+                while (_player1.Count > 0 && _player2.Count > 0)
+                {
+                    var a1 = _player1.Dequeue();
+                    var a2 = _player2.Dequeue();
+                    if (a1 > a2)
+                    {
+                        _player1.Enqueue(a1);
+                        _player1.Enqueue(a2);
+                    }
+                    else
+                    {
+                        _player2.Enqueue(a2);
+                        _player2.Enqueue(a1);
+                    }
+                }
+            }
+
+            public int PlayGame2()
+            {
+                while (_player1.Count > 0 && _player2.Count > 0)
+                {
+                    Queue<int> winner;
+
+                    var a1 = _player1.Dequeue();
+                    var a2 = _player2.Dequeue();
+
+                    if (_player1.Count < a1 || _player2.Count < a2)
+                        winner = a1 > a2 ? _player1 : _player2;
+                    else
+                    {
+                        var subGame = new Day22Game(this);
+                        var winnerNumber = subGame.PlayGame2();
+                        winner = winnerNumber == 1 ? _player1 : _player2;
+                    }
+                    
+                    if (_player1 == winner)
+                    {
+                        _player1.Enqueue(a1);
+                        _player1.Enqueue(a2);
+                    }
+                    else
+                    {
+                        _player2.Enqueue(a2);
+                        _player2.Enqueue(a1);
+                    }
+                }
+                
+                return _player1.Count > _player2.Count ? 1 : 2;
+            }
+
+            public int CalcWinnerScore()
+            {
+                var winner = _player1.Count > _player2.Count ? _player1 : _player2;
+                var result = 0;
+                while (winner.Count > 0)
+                    result += winner.Count * winner.Dequeue();
+
+                return result;
+            }
+        }
+
         private sealed class Day21
         {
             private readonly Regex _regex = new Regex(@"^((?<product>\s*[a-z]+)\s)+(\(contains ((?<allergen>[a-z]+)[,\s]*)*\))?$");
