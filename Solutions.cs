@@ -839,7 +839,7 @@ namespace AdventOfCode2020
             return game.CalcWinnerScore();
         }
         
-        [TestCase("Day22_test.txt", ExpectedResult = 306)]
+        [TestCase("Day22_test.txt", ExpectedResult = 291)]
         [TestCase("Day22_problem.txt", ExpectedResult = 32677)]
         public int Day22_2(string fileName)
         {
@@ -849,6 +849,159 @@ namespace AdventOfCode2020
             game.PlayGame2();
 
             return game.CalcWinnerScore();
+        }
+
+        [TestCase("Day23_test.txt", ExpectedResult = "67384529")]
+        [TestCase("Day23_problem.txt", ExpectedResult = "82635947")]
+        public string Day23_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var game = new Day23Game(inputs, game: 1);
+
+            for (int i = 0; i < 100; i++)
+                game.MakeMove();
+           
+            return game.GetAnswer1();
+        }
+
+        [TestCase("Day23_test.txt", ExpectedResult = 149245887792)]
+        [TestCase("Day23_problem.txt", ExpectedResult = 149245887792)]
+        public long Day23_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var game = new Day23Game(inputs, game: 2);
+
+            for (int i = 0; i < 10_000; i++)
+                game.MakeMove();
+
+            return game.GetAnswer2();
+        }
+
+        private sealed class Day23Game
+        {
+            private readonly Node<int> _head;
+            private Node<int> _current;
+            private readonly Node<int>[] _index = new Node<int>[1_000_000 + 1];
+            private int _min;
+            private int _max;
+
+            public Day23Game(string[] inputs, int game)
+            {
+                var numbers = inputs[0].Select(c => int.Parse(c.ToString())).ToArray();
+
+                _head = new Node<int>(numbers[0]);
+                var curr = _head;
+                foreach (var num in numbers.Skip(1))
+                {
+                    var newItem = new Node<int>(num);
+                    curr.Next = newItem;
+                    _index[num] = newItem;
+
+                    curr = newItem;
+
+                }
+
+                if (game == 2)
+                {
+                    // if Part two, need to add more nodes
+                    for (int i = numbers.Max() + 1; i <= 1_000_000; i++)
+                    {
+                        var newItem = new Node<int>(i);
+                        curr.Next = newItem;
+                        _index[i] = newItem;
+
+
+                        curr = newItem;
+                    }
+                }
+
+                _min = numbers.Min();
+                _max = game == 2 ? 1_000_000 : numbers.Max();
+
+                curr.Next = _head;
+                _current = _head;
+            }
+
+            public void MakeMove()
+            {
+                // pickup
+                var pickup = _current.Next;
+                var a1 = _current.Next.Value;
+                var a2 = _current.Next.Next.Value;
+                var a3 = _current.Next.Next.Next.Value;
+
+                // var threeHashmap = new HashSet<int>(new[]
+                // {
+                //     _current.Next.Value,
+                //     _current.Next.Next.Value,
+                //     _current.Next.Next.Next.Value,
+                // });
+
+                // removing 3 items
+                _current.Next = _current.Next.Next.Next.Next;
+
+                // select destination
+                var destination = _current.Value - 1;
+                while (destination == a1 || destination == a2 || destination == a3 || destination == 0)
+                {
+                    destination--;
+                    if (destination <= 0)
+                        destination = 9;
+                }
+                
+                // find destination Node
+                var destinationNode = _current;
+                while (destinationNode.Value != destination)
+                    destinationNode = destinationNode.Next;
+
+                // insert three items after destination
+                pickup.Next.Next.Next = destinationNode.Next;
+                destinationNode.Next = pickup;
+                
+                // new current
+                _current = _current.Next;
+            }
+            
+            public string GetAnswer1()
+            {
+                var current = _head;
+                // skip till 1
+                while (current.Value != 1)
+                    current = current.Next;
+
+                var result = new StringBuilder();
+                // take till 1
+                current = _current.Next;
+                while (current.Value != 1)
+                {
+                    result.Append(current.Value);
+                    current = current.Next;
+                }
+
+                return result.ToString();
+            }
+            
+            public long GetAnswer2()
+            {
+                var current = _head;
+                // skip till 1
+                while (current.Value != 1)
+                    current = current.Next;
+
+                // take next 2 and multiply
+                return current.Next.Value * current.Next.Next.Value;
+            }
+            
+            private sealed class Node<T>
+            {
+                public T Value { get; }
+                public Node<T> Next { get; set; }
+
+                public Node(T value)
+                {
+                    Value = value;
+                }
+            }
         }
 
         private sealed class Day22Game
@@ -863,10 +1016,10 @@ namespace AdventOfCode2020
                 _player2 = new Queue<int>(batches[1].Skip(1).Select(int.Parse));
             }
 
-            private Day22Game(Day22Game original)
+            private Day22Game(Day22Game original, int len1, int len2)
             {
-                _player1 = new Queue<int>(original._player1);
-                _player2 = new Queue<int>(original._player2);
+                _player1 = new Queue<int>(original._player1.Take(len1));
+                _player2 = new Queue<int>(original._player2.Take(len2));
             }
 
             public void PlayGame1()
@@ -901,7 +1054,7 @@ namespace AdventOfCode2020
                         winner = a1 > a2 ? _player1 : _player2;
                     else
                     {
-                        var subGame = new Day22Game(this);
+                        var subGame = new Day22Game(this, a1, a2);
                         var winnerNumber = subGame.PlayGame2();
                         winner = winnerNumber == 1 ? _player1 : _player2;
                     }
