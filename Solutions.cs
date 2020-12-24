@@ -865,13 +865,13 @@ namespace AdventOfCode2020
         }
 
         [TestCase("Day23_test.txt", ExpectedResult = 149245887792)]
-        [TestCase("Day23_problem.txt", ExpectedResult = 149245887792)]
-        public long Day23_2(string fileName)
+        [TestCase("Day23_problem.txt", ExpectedResult = 157047826689)]
+        public ulong Day23_2(string fileName)
         {
             var inputs = ReadAllLines(fileName);
             var game = new Day23Game(inputs, game: 2);
 
-            for (int i = 0; i < 10_000; i++)
+            for (int i = 0; i < 10_000_000; i++)
                 game.MakeMove();
 
             return game.GetAnswer2();
@@ -880,25 +880,27 @@ namespace AdventOfCode2020
         private sealed class Day23Game
         {
             private readonly Node<int> _head;
+            private readonly int _min;
+            private readonly int _max;
+
             private Node<int> _current;
             private readonly Node<int>[] _index = new Node<int>[1_000_000 + 1];
-            private int _min;
-            private int _max;
 
             public Day23Game(string[] inputs, int game)
             {
                 var numbers = inputs[0].Select(c => int.Parse(c.ToString())).ToArray();
 
                 _head = new Node<int>(numbers[0]);
-                var curr = _head;
+                _index[numbers[0]] = _head;
+
+                var current = _head;
                 foreach (var num in numbers.Skip(1))
                 {
                     var newItem = new Node<int>(num);
-                    curr.Next = newItem;
+                    current.Next = newItem;
                     _index[num] = newItem;
 
-                    curr = newItem;
-
+                    current = newItem;
                 }
 
                 if (game == 2)
@@ -907,18 +909,18 @@ namespace AdventOfCode2020
                     for (int i = numbers.Max() + 1; i <= 1_000_000; i++)
                     {
                         var newItem = new Node<int>(i);
-                        curr.Next = newItem;
+                        current.Next = newItem;
                         _index[i] = newItem;
 
 
-                        curr = newItem;
+                        current = newItem;
                     }
                 }
 
                 _min = numbers.Min();
                 _max = game == 2 ? 1_000_000 : numbers.Max();
 
-                curr.Next = _head;
+                current.Next = _head;
                 _current = _head;
             }
 
@@ -930,29 +932,23 @@ namespace AdventOfCode2020
                 var a2 = _current.Next.Next.Value;
                 var a3 = _current.Next.Next.Next.Value;
 
-                // var threeHashmap = new HashSet<int>(new[]
-                // {
-                //     _current.Next.Value,
-                //     _current.Next.Next.Value,
-                //     _current.Next.Next.Next.Value,
-                // });
-
                 // removing 3 items
                 _current.Next = _current.Next.Next.Next.Next;
 
                 // select destination
                 var destination = _current.Value - 1;
-                while (destination == a1 || destination == a2 || destination == a3 || destination == 0)
+                while (destination == a1 || destination == a2 || destination == a3 || destination < _min || _index[destination] == null)
                 {
                     destination--;
-                    if (destination <= 0)
-                        destination = 9;
+                    if (destination < _min)
+                        destination = _max;
                 }
                 
                 // find destination Node
-                var destinationNode = _current;
-                while (destinationNode.Value != destination)
-                    destinationNode = destinationNode.Next;
+                var destinationNode = _index[destination];
+                // var destinationNode = _current;
+                // while (destinationNode.Value != destination)
+                //     destinationNode = destinationNode.Next;
 
                 // insert three items after destination
                 pickup.Next.Next.Next = destinationNode.Next;
@@ -981,7 +977,7 @@ namespace AdventOfCode2020
                 return result.ToString();
             }
             
-            public long GetAnswer2()
+            public ulong GetAnswer2()
             {
                 var current = _head;
                 // skip till 1
@@ -989,7 +985,7 @@ namespace AdventOfCode2020
                     current = current.Next;
 
                 // take next 2 and multiply
-                return current.Next.Value * current.Next.Next.Value;
+                return (ulong)current.Next.Value * (ulong)current.Next.Next.Value;
             }
             
             private sealed class Node<T>
