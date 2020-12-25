@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Xml.Serialization;
 using NUnit.Framework;
+using static System.Math;
 
 namespace AdventOfCode2020
 {
@@ -840,7 +836,7 @@ namespace AdventOfCode2020
         }
         
         [TestCase("Day22_test.txt", ExpectedResult = 291)]
-        [TestCase("Day22_problem.txt", ExpectedResult = 32677)]
+        [TestCase("Day22_problem.txt", ExpectedResult = 33661)]
         public int Day22_2(string fileName)
         {
             var inputs = ReadAllLines(fileName);
@@ -1012,62 +1008,63 @@ namespace AdventOfCode2020
                 _player2 = new Queue<int>(batches[1].Skip(1).Select(int.Parse));
             }
 
-            private Day22Game(Day22Game original, int len1, int len2)
+            private Day22Game(IEnumerable<int> player1, IEnumerable<int> player2)
             {
-                _player1 = new Queue<int>(original._player1.Take(len1));
-                _player2 = new Queue<int>(original._player2.Take(len2));
+                _player1 = new Queue<int>(player1);
+                _player2 = new Queue<int>(player2);
             }
 
             public void PlayGame1()
             {
-                while (_player1.Count > 0 && _player2.Count > 0)
+                while (_player1.Any() && _player2.Any())
                 {
-                    var a1 = _player1.Dequeue();
-                    var a2 = _player2.Dequeue();
-                    if (a1 > a2)
-                    {
-                        _player1.Enqueue(a1);
-                        _player1.Enqueue(a2);
-                    }
-                    else
-                    {
-                        _player2.Enqueue(a2);
-                        _player2.Enqueue(a1);
-                    }
+                    var card1 = _player1.Dequeue();
+                    var card2 = _player2.Dequeue();
+                    var winner = card1 > card2 ? _player1 : _player2;
+                    winner.Enqueue(Max(card1, card2));
+                    winner.Enqueue(Min(card1, card2));
                 }
             }
 
             public int PlayGame2()
             {
-                while (_player1.Count > 0 && _player2.Count > 0)
+                var seenStates = new HashSet<string>();
+                while (_player1.Any() && _player2.Any())
                 {
-                    Queue<int> winner;
+                    var state = GetState(_player1, _player2);
+                    if (!seenStates.Add(state))
+                        return 1;
+                    
+                    var card1 = _player1.Dequeue();
+                    var card2 = _player2.Dequeue();
 
-                    var a1 = _player1.Dequeue();
-                    var a2 = _player2.Dequeue();
-
-                    if (_player1.Count < a1 || _player2.Count < a2)
-                        winner = a1 > a2 ? _player1 : _player2;
+                    int winner;
+                    if (_player1.Count < card1 || _player2.Count < card2)
+                        winner = card1 > card2 ? 1 : 2;
                     else
                     {
-                        var subGame = new Day22Game(this, a1, a2);
-                        var winnerNumber = subGame.PlayGame2();
-                        winner = winnerNumber == 1 ? _player1 : _player2;
+                        var subGame = new Day22Game(_player1.Take(card1), _player2.Take(card2));
+                        winner = subGame.PlayGame2();
                     }
                     
-                    if (_player1 == winner)
+                    if (winner == 1)
                     {
-                        _player1.Enqueue(a1);
-                        _player1.Enqueue(a2);
+                        _player1.Enqueue(card1);
+                        _player1.Enqueue(card2);
                     }
                     else
                     {
-                        _player2.Enqueue(a2);
-                        _player2.Enqueue(a1);
+                        _player2.Enqueue(card2);
+                        _player2.Enqueue(card1);
                     }
                 }
                 
                 return _player1.Count > _player2.Count ? 1 : 2;
+
+                string GetState(Queue<int> player1, Queue<int> player2)
+                {
+                    return string.Join("", player1) + "." + string.Join("", player2);
+                }
             }
 
             public int CalcWinnerScore()
