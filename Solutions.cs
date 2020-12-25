@@ -812,7 +812,7 @@ namespace AdventOfCode2020
             var solver = new Day21(inputs);
             return solver.GetNonAllergicProductsCount();
         }
-        
+
         [TestCase("Day21_test.txt", ExpectedResult = "mxmxvkd,sqjhc,fvjkl")]
         [TestCase("Day21_problem.txt", ExpectedResult = "qqskn,ccvnlbp,tcm,jnqcd,qjqb,xjqd,xhzr,cjxv")]
         public string Day21_2(string fileName)
@@ -834,7 +834,7 @@ namespace AdventOfCode2020
 
             return game.CalcWinnerScore();
         }
-        
+
         [TestCase("Day22_test.txt", ExpectedResult = 291)]
         [TestCase("Day22_problem.txt", ExpectedResult = 33661)]
         public int Day22_2(string fileName)
@@ -856,7 +856,7 @@ namespace AdventOfCode2020
 
             for (int i = 0; i < 100; i++)
                 game.MakeMove();
-           
+
             return game.GetAnswer1();
         }
 
@@ -871,6 +871,40 @@ namespace AdventOfCode2020
                 game.MakeMove();
 
             return game.GetAnswer2();
+        }
+
+        [TestCase("Day25_test.txt", ExpectedResult = 14897079)]
+        [TestCase("Day25_problem.txt", ExpectedResult = 11288669)]
+        public int Day25_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var publicKey1 = int.Parse(inputs[0]);
+            var publicKey2 = int.Parse(inputs[1]);
+
+            var loopSize1 = FindLoopSize(publicKey1);
+            var loopSize2 = FindLoopSize(publicKey2);
+
+            return CalcEncryptionKey(publicKey1, loopSize2);
+
+            int FindLoopSize(in int publicKey)
+            {
+                var result = new BigInteger(1);
+                var subject = 7;
+                var loopSize = 0;
+                for (; loopSize < 100_000_000 && result != publicKey; loopSize++)
+                    result = result * subject % 20201227;
+
+                return loopSize;
+            }
+
+            int CalcEncryptionKey(in int subject, in int loopSize)
+            {
+                var result = new BigInteger(1);
+                for (int i = 0; i < loopSize; i++)
+                    result = result * subject % 20201227;
+
+                return (int) result;
+            }
         }
 
         private sealed class Day23Game
@@ -939,7 +973,7 @@ namespace AdventOfCode2020
                     if (destination < _min)
                         destination = _max;
                 }
-                
+
                 // find destination Node
                 var destinationNode = _index[destination];
                 // var destinationNode = _current;
@@ -949,11 +983,11 @@ namespace AdventOfCode2020
                 // insert three items after destination
                 pickup.Next.Next.Next = destinationNode.Next;
                 destinationNode.Next = pickup;
-                
+
                 // new current
                 _current = _current.Next;
             }
-            
+
             public string GetAnswer1()
             {
                 var current = _head;
@@ -972,7 +1006,7 @@ namespace AdventOfCode2020
 
                 return result.ToString();
             }
-            
+
             public ulong GetAnswer2()
             {
                 var current = _head;
@@ -983,7 +1017,7 @@ namespace AdventOfCode2020
                 // take next 2 and multiply
                 return (ulong)current.Next.Value * (ulong)current.Next.Next.Value;
             }
-            
+
             private sealed class Node<T>
             {
                 public T Value { get; }
@@ -1034,7 +1068,7 @@ namespace AdventOfCode2020
                     var state = GetState(_player1, _player2);
                     if (!seenStates.Add(state))
                         return 1;
-                    
+
                     var card1 = _player1.Dequeue();
                     var card2 = _player2.Dequeue();
 
@@ -1046,7 +1080,7 @@ namespace AdventOfCode2020
                         var subGame = new Day22Game(_player1.Take(card1), _player2.Take(card2));
                         winner = subGame.PlayGame2();
                     }
-                    
+
                     if (winner == 1)
                     {
                         _player1.Enqueue(card1);
@@ -1058,7 +1092,7 @@ namespace AdventOfCode2020
                         _player2.Enqueue(card1);
                     }
                 }
-                
+
                 return _player1.Count > _player2.Count ? 1 : 2;
 
                 string GetState(Queue<int> player1, Queue<int> player2)
