@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -872,6 +873,26 @@ namespace AdventOfCode2020
 
             return game.GetAnswer2();
         }
+        
+        [TestCase("Day24_test.txt", ExpectedResult = 10)]
+        [TestCase("Day24_problem.txt", ExpectedResult = 346)]
+        public int Day24_1(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var floor = new Day25Floor(inputs);
+            
+            return floor.FollowAllDirectionsAndGetBlacksCount();
+        }
+
+        [TestCase("Day24_test.txt", ExpectedResult = 2208)]
+        [TestCase("Day24_problem.txt", ExpectedResult = 3802)]
+        public int Day24_2(string fileName)
+        {
+            var inputs = ReadAllLines(fileName);
+            var floor = new Day25Floor(inputs);
+            
+            return floor.GameOfLifeAndGetBlacksCount(100);
+        }
 
         [TestCase("Day25_test.txt", ExpectedResult = 14897079)]
         [TestCase("Day25_problem.txt", ExpectedResult = 11288669)]
@@ -905,6 +926,137 @@ namespace AdventOfCode2020
 
                 return (int) result;
             }
+        }
+
+        /// <summary>
+        /// Pointy topped Hexagonal Grid using Axial coordinates.
+        /// See <a href="https://www.redblobgames.com/grids/hexagons/">Hexagonal grids guide.</a>
+        /// </summary>
+        private sealed class Day25Floor
+        {
+            private static readonly Regex DirectionsRegex = new Regex("^(se|sw|nw|ne|e|w)+$", RegexOptions.Compiled);
+            private static readonly IDictionary<Direction, Hex> DirectionOffset = new Dictionary<Direction, Hex>
+            {
+                {Direction.East, new Hex(+1, +0)},
+                {Direction.West, new Hex(-1, +0)},
+                {Direction.NorthEast, new Hex(+1, -1)},
+                {Direction.NorthWest, new Hex(+0, -1)},
+                {Direction.SouthEast, new Hex(+0, +1)},
+                {Direction.SouthWest, new Hex(-1, +1)},
+            };
+
+            private readonly IList<Direction[]> _directions = new List<Direction[]>();
+
+            public Day25Floor(string[] inputs)
+            {
+                foreach (var line in inputs)
+                    _directions.Add(ParseLine(line));
+            }
+
+            public int FollowAllDirectionsAndGetBlacksCount()
+            {
+                var blackTiles = FollowAllDirections();
+                return blackTiles.Count;
+            }
+
+            public int GameOfLifeAndGetBlacksCount(int iterations)
+            {
+                var blackTiles = FollowAllDirections();
+                for (int i = 0; i < iterations; i++)
+                {
+                    var nextBlackTiles = new HashSet<Hex>(blackTiles);
+                    foreach (var hex in GetAllBlacksAndAdjacents(blackTiles))
+                    {
+                        var blackAdjacentsCount = BlackAdjacentsCount(blackTiles, hex);
+                        if (blackTiles.Contains(hex) && (blackAdjacentsCount == 0 || blackAdjacentsCount > 2))
+                            nextBlackTiles.Remove(hex);
+                        if (!blackTiles.Contains(hex) && blackAdjacentsCount == 2)
+                            nextBlackTiles.Add(hex);
+                    }
+
+                    blackTiles = nextBlackTiles;
+                }
+
+                return blackTiles.Count;
+            }
+
+            private HashSet<Hex> FollowAllDirections()
+            {
+                var blackTiles = new HashSet<Hex>();
+                foreach (var path in _directions)
+                {
+                    var coords = FollowPath(path);
+                    if (blackTiles.Contains(coords))
+                        blackTiles.Remove(coords);
+                    else
+                        blackTiles.Add(coords);
+                }
+
+                return blackTiles;
+            }
+
+            private static IEnumerable<Hex> GetAllBlacksAndAdjacents(HashSet<Hex> blackTiles)
+            {
+                foreach (var blackTile in blackTiles)
+                {
+                    yield return blackTile;
+                    foreach (var adjacent in GetAdjacents(blackTile))
+                        yield return adjacent;
+                }
+            }
+
+            private static IEnumerable<Hex> GetAdjacents(Hex hex)
+            {
+                foreach (var offset in DirectionOffset.Values)
+                    yield return new Hex(hex.q + offset.q, hex.r + offset.r);
+            }
+
+            private static int BlackAdjacentsCount(HashSet<Hex> blackTiles, Hex hex)
+            {
+                return GetAdjacents(hex).Count(blackTiles.Contains);
+            }
+
+            private static Hex FollowPath(Direction[] path)
+            {
+                var point = new Hex(0, 0);
+                foreach (var direction in path)
+                {
+                    var offset = DirectionOffset[direction];
+                    point = new Hex(point.q + offset.q, point.r + offset.r);
+                }
+
+                return point;
+            }
+
+            private static Direction[] ParseLine(string line)
+            {
+                var match = DirectionsRegex.Match(line);
+                return match.Groups[1].Captures
+                    .Select(c => c.Value)
+                    .Select(ParseDirection)
+                    .ToArray();
+            }
+
+            private static Direction ParseDirection(string direction)
+            {
+                switch (direction)
+                {
+                    case "e": return Direction.East;
+                    case "se": return Direction.SouthEast;
+                    case "sw": return Direction.SouthWest;
+                    case "w": return Direction.West;
+                    case "nw": return Direction.NorthWest;
+                    case "ne": return Direction.NorthEast;
+                    default: throw new NotSupportedException(direction);
+                }
+            }
+
+            private enum Direction
+            {
+                East, SouthEast, SouthWest, West, NorthWest, NorthEast
+            }
+            
+            private record Hex(int q, int r);
         }
 
         private sealed class Day23Game
