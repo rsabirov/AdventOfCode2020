@@ -691,22 +691,7 @@ namespace AdventOfCode2020
             var day16 = new Day16(inputs);
             return day16.GetYourTicketField(field);
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        
         [TestCase("Day17_test.txt", ExpectedResult = 112)]
         [TestCase("Day17_problem.txt", ExpectedResult = 313)]
         public int Day17_1(string fileName)
